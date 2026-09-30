@@ -1,7 +1,9 @@
 package pages
 
 import (
+	"github.com/hi-naresh/unsolved/internal/auth"
 	"github.com/hi-naresh/unsolved/internal/service"
+	"github.com/hi-naresh/unsolved/internal/views/partials"
 	"github.com/hi-naresh/unsolved/internal/views/layouts"
 )
 
@@ -35,7 +37,12 @@ templ Profile(p service.Profile) {
 	@layouts.Base("@" + p.Handle) {
 		<header>
 			<h1 class="text-2xl font-semibold">{ p.DisplayName }</h1>
-			<p class="text-stone-500">{ "@" + p.Handle }</p>
+			<p class="flex items-center gap-3 text-stone-500">
+				{ "@" + p.Handle }
+				if u := auth.UserFrom(ctx); u != nil && u.Handle != p.Handle {
+					@partials.ReportLink("user", p.ReportID)
+				}
+			</p>
 			if p.Suspended {
 				<p class="mt-2 text-sm text-amber-800">This account is suspended.</p>
 			}

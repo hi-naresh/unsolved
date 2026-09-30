@@ -41,6 +41,7 @@ templ Admin(reports []AdminReport, next string) {
 	@layouts.Base("Admin") {
 		<div class="flex items-baseline justify-between gap-4">
 			<h1 class="text-2xl font-semibold">Reports</h1>
+			<a href="/admin/merges" class="ml-auto text-sm underline">Merge suggestions</a>
 			<form method="post" action="/admin/rescore">
 				@adminCSRF()
 				<button type="submit" class="btn-secondary" title="Rebuild every stored score from the vote tables (after a half-life or weight change)">Rescore all</button>

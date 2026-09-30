@@ -120,6 +120,9 @@ templ ProblemContent(v ProblemPageView) {
 				</form>
 			}
 			<span class="flex-1"></span>
+			if auth.UserFrom(ctx) != nil {
+				@partials.ReportLink("problem_revision", v.RevisionID)
+			}
 			@partials.ProblemInterest(v.Interest)
 		</nav>
 		if len(v.Forks) > 0 {

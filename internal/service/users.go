@@ -240,6 +240,7 @@ func nilIfEmpty(s string) *string {
 
 // Profile is what /u/{handle} shows. It deliberately carries no user id.
 type Profile struct {
+	ReportID        string // user id as text, only for the report form; profiles are always named
 	Handle          string
 	DisplayName     string
 	DeclaredHistory string
@@ -275,7 +276,7 @@ func (s *Service) ProfileByHandle(ctx context.Context, handle string) (Profile, 
 	if u.DeletedAt != nil {
 		return p, ErrNotFound
 	}
-	p = Profile{Handle: u.Handle, DisplayName: u.DisplayName, InDirectory: u.InDirectory, Suspended: u.SuspendedAt != nil}
+	p = Profile{ReportID: u.ID.String(), Handle: u.Handle, DisplayName: u.DisplayName, InDirectory: u.InDirectory, Suspended: u.SuspendedAt != nil}
 	if u.DeclaredHistory != nil {
 		p.DeclaredHistory = *u.DeclaredHistory
 	}

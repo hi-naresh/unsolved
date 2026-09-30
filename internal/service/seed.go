@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/hi-naresh/unsolved/internal/jobs"
 
 	"github.com/google/uuid"
 	"github.com/hi-naresh/unsolved/internal/store"
@@ -122,7 +123,7 @@ func (s *Service) Seed(ctx context.Context) (int, error) {
 		if err != nil {
 			return created, err
 		}
-		err = s.Store.InTx(ctx, func(q *store.Queries, _ pgx.Tx) error {
+		err = s.Store.InTx(ctx, func(q *store.Queries, tx pgx.Tx) error {
 			if err := q.SeedCreateProblem(ctx, store.SeedCreateProblemParams{ID: pid, DomainID: domain.ID, AuthorID: authorID}); err != nil {
 				return err
 			}
@@ -132,7 +133,11 @@ func (s *Service) Seed(ctx context.Context) (int, error) {
 			}); err != nil {
 				return err
 			}
-			return q.SeedSetCurrentRevision(ctx, store.SeedSetCurrentRevisionParams{ID: pid, CurrentRevisionID: &rid})
+			if err := q.SeedSetCurrentRevision(ctx, store.SeedSetCurrentRevisionParams{ID: pid, CurrentRevisionID: &rid}); err != nil {
+				return err
+			}
+			_, err := s.Jobs.InsertTx(ctx, tx, jobs.EmbedRevisionArgs{RevisionID: rid}, nil)
+			return err
 		})
 		if err != nil {
 			return created, err

@@ -19,6 +19,10 @@ templ SolutionCard(s SolutionView) {
 					if s.IsRevised {
 						<span>· revised</span>
 					}
+					if auth.UserFrom(ctx) != nil {
+						<span class="flex-1"></span>
+						@ReportLink("solution_revision", s.RevisionID)
+					}
 				</div>
 				<div class="mt-2 whitespace-pre-line text-stone-800">{ s.Body }</div>
 				<p class="mt-3 text-sm text-stone-600">
