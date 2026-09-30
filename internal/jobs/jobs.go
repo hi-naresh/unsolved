@@ -2,9 +2,11 @@ package jobs
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/hi-naresh/unsolved/internal/config"
 	"github.com/hi-naresh/unsolved/internal/ranking"
 	"github.com/hi-naresh/unsolved/internal/store"
@@ -73,6 +75,7 @@ type errorHandler struct{ log *slog.Logger }
 func (h *errorHandler) HandleError(ctx context.Context, job *rivertype.JobRow, err error) *river.ErrorHandlerResult {
 	if job.Attempt >= job.MaxAttempts {
 		h.log.ErrorContext(ctx, "job discarded after retries", "kind", job.Kind, "job_id", job.ID, "attempt", job.Attempt, "err", err)
+		sentry.CaptureException(fmt.Errorf("job %s (id %d) discarded after %d attempts: %w", job.Kind, job.ID, job.Attempt, err))
 	} else {
 		h.log.WarnContext(ctx, "job failed, will retry", "kind", job.Kind, "job_id", job.ID, "attempt", job.Attempt, "err", err)
 	}
