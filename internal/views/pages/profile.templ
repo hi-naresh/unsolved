@@ -2,12 +2,13 @@ package pages
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/hi-naresh/unsolved/internal/auth"
-	"github.com/hi-naresh/unsolved/internal/views"
 	"github.com/hi-naresh/unsolved/internal/service"
-	"github.com/hi-naresh/unsolved/internal/views/partials"
+	"github.com/hi-naresh/unsolved/internal/views"
 	"github.com/hi-naresh/unsolved/internal/views/layouts"
+	"github.com/hi-naresh/unsolved/internal/views/partials"
 )
 
 func userProviderLabel(p string) string {
@@ -33,65 +34,122 @@ func userContributionVerb(c service.Contribution) string {
 	}
 }
 
+// userInitial is the first letter of a display name (or handle) for avatars.
+func userInitial(name, handle string) string {
+	for _, s := range []string{name, handle} {
+		if s = strings.TrimSpace(s); s != "" {
+			return strings.ToUpper(string([]rune(s)[:1]))
+		}
+	}
+	return "?"
+}
+
+func profileContribCount(p service.Profile) string {
+	n := len(p.Contributions)
+	if n >= 30 {
+		return "30+"
+	}
+	return strconv.Itoa(n)
+}
+
+func profileVouchTotal(p service.Profile) int {
+	t := 0
+	for _, d := range p.Domains {
+		t += d.Vouches
+	}
+	return t
+}
+
 // Profile is /u/{handle}. p carries no user id; its contributions are named
 // ones only (filtered in the query), and Links is empty unless the user is in
 // the directory.
 templ Profile(p service.Profile) {
 	@layouts.Base("@" + p.Handle) {
-		<header>
-			<h1 class="text-2xl font-semibold">{ p.DisplayName }</h1>
-			<p class="flex items-center gap-3 text-stone-500">
-				{ "@" + p.Handle }
-				if u := auth.UserFrom(ctx); u != nil && u.Handle != p.Handle {
-					@partials.ReportLink("user", p.ReportID)
-				}
-			</p>
-			if p.Suspended {
-				<p class="mt-2 text-sm text-amber-800">This account is suspended.</p>
-			}
-			if len(p.Links) > 0 {
-				<ul class="mt-3 flex gap-4 text-sm">
-					for _, l := range p.Links {
-						<li><a href={ templ.SafeURL(l.URL) } rel="nofollow noopener" class="underline hover:text-stone-600">{ userProviderLabel(l.Provider) }</a></li>
+		<header class="card overflow-hidden">
+			<div class="h-16 bg-gradient-to-r from-accent/25 via-accent/10 to-transparent sm:h-20" aria-hidden="true"></div>
+			<div class="px-4 pb-5 sm:px-6">
+				<div class="-mt-9 flex items-end justify-between gap-3">
+					<span class="grid size-18 place-items-center rounded-full border-4 border-white bg-accent-soft text-2xl font-semibold text-accent-ink" aria-hidden="true">{ userInitial(p.DisplayName, p.Handle) }</span>
+					if u := auth.UserFrom(ctx); u != nil && u.Handle != p.Handle {
+						<div class="report-right pb-1">
+							@partials.ReportLink("user", p.ReportID)
+						</div>
 					}
-				</ul>
-			}
+				</div>
+				<h1 class="mt-3 text-2xl font-semibold tracking-tight">{ p.DisplayName }</h1>
+				<p class="text-sm text-stone-500">{ "@" + p.Handle }</p>
+				if p.Suspended {
+					<p class="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-500/12 px-2.5 py-1 text-sm text-amber-800 dark:text-amber-300">This account is suspended.</p>
+				}
+				if len(p.Links) > 0 {
+					<ul class="mt-3 flex flex-wrap gap-2 text-sm">
+						for _, l := range p.Links {
+							<li>
+								<a href={ templ.SafeURL(l.URL) } rel="nofollow noopener" class="btn-secondary py-1 text-xs">
+									<svg class="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8.5 11.5a3.5 3.5 0 0 0 5 0l2.5-2.5a3.5 3.5 0 0 0-5-5l-.8.8M11.5 8.5a3.5 3.5 0 0 0-5 0L4 11a3.5 3.5 0 0 0 5 5l.8-.8" stroke-linecap="round"></path></svg>
+									{ userProviderLabel(l.Provider) }
+								</a>
+							</li>
+						}
+					</ul>
+				}
+				<dl class="mt-5 flex gap-6 border-t border-stone-200 pt-4 text-sm">
+					<div>
+						<dt class="kicker">Contributions</dt>
+						<dd class="mt-0.5 text-lg font-semibold tabular-nums">{ profileContribCount(p) }</dd>
+					</div>
+					<div>
+						<dt class="kicker">Vouches</dt>
+						<dd class="mt-0.5 text-lg font-semibold tabular-nums">{ strconv.Itoa(profileVouchTotal(p)) }</dd>
+					</div>
+				</dl>
+				@profileStanding(p)
+			</div>
 		</header>
 		if p.DeclaredHistory != "" {
 			if p.DeclaredCollapsed {
-				<details class="declared-history mt-6">
-					<summary class="cursor-pointer text-sm font-medium text-stone-600">
+				<details class="declared-history card group mt-4 px-4 py-3 sm:px-6">
+					<summary class="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-stone-700 [&::-webkit-details-marker]:hidden">
+						<svg class="size-3.5 text-stone-400 transition group-open:rotate-90" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m8 5 5 5-5 5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
 						Declared history <span class="font-normal text-stone-500">— unverified, carries no weight</span>
 					</summary>
-					<p class="mt-1 whitespace-pre-line text-stone-800">{ p.DeclaredHistory }</p>
+					<p class="mt-2 whitespace-pre-line text-[15px] leading-relaxed text-stone-700">{ p.DeclaredHistory }</p>
 				</details>
 			} else {
-				<section class="declared-history mt-6">
-					<h2 class="text-sm font-medium text-stone-600">
+				<section class="declared-history card mt-4 px-4 py-4 sm:px-6">
+					<h2 class="text-sm font-medium text-stone-700">
 						Declared history <span class="font-normal text-stone-500">— unverified, carries no weight</span>
 					</h2>
-					<p class="mt-1 whitespace-pre-line text-stone-800">{ p.DeclaredHistory }</p>
+					<p class="mt-2 whitespace-pre-line text-[15px] leading-relaxed text-stone-700">{ p.DeclaredHistory }</p>
 				</section>
 			}
 		}
-		@profileStanding(p)
 		<section class="mt-8">
-			<h2 class="text-lg font-semibold">Contributions</h2>
+			<h2 class="text-base font-semibold">Contributions</h2>
 			if len(p.Contributions) == 0 {
-				<p class="mt-2 text-sm text-stone-500">No contributions under this name yet.</p>
+				<div class="card mt-3 px-6 py-8 text-center">
+					<p class="text-sm text-stone-500">No contributions under this name yet.</p>
+					<a href="/" class="btn-secondary mt-4">Explore open problems</a>
+				</div>
 			} else {
-				<ul class="mt-3 divide-y divide-stone-200">
+				<ol class="relative mt-4 space-y-4 border-l border-stone-200 pl-5 ml-1.5">
 					for _, c := range p.Contributions {
-						<li class="py-3">
+						<li class="relative">
+							<span
+								class={ "absolute -left-[26.5px] top-1 size-3 rounded-full border-2 border-stone-50",
+									templ.KV("bg-accent", c.Kind == "problem"),
+									templ.KV("bg-emerald-500", c.Kind != "problem") }
+								aria-hidden="true"
+							></span>
 							<p class="text-xs text-stone-500">
 								{ userContributionVerb(c) } · <time datetime={ c.CreatedAt.Format("2006-01-02T15:04:05Z07:00") }>{ c.CreatedAt.Format("2 Jan 2006") }</time>
 							</p>
-							<a href={ templ.SafeURL("/p/" + c.ProblemID.String()) } class="font-medium hover:underline">{ c.Title }</a>
+							<a href={ templ.SafeURL("/p/" + c.ProblemID.String()) } class="mt-0.5 block font-medium leading-snug text-stone-900 hover:text-accent">{ c.Title }</a>
 						</li>
 					}
-				</ul>
+				</ol>
 				if len(p.Contributions) >= 30 {
-					<p class="mt-3 text-xs text-stone-500">Showing the 30 most recent.</p>
+					<p class="mt-4 text-xs text-stone-500">Showing the 30 most recent.</p>
 				}
 			}
 		</section>
@@ -120,28 +178,39 @@ func profileVouchText(d service.ProfileDomain) string {
 // never who vouched), and a vouch toggle for eligible viewers.
 templ profileStanding(p service.Profile) {
 	if profileHasStanding(p) {
-		<section class="mt-6" id="vouches">
-			<ul class="space-y-1 text-sm text-stone-700">
+		<section class="mt-4" id="vouches" aria-label="Standing">
+			<ul class="flex flex-wrap gap-2 text-sm">
 				for _, d := range p.Domains {
-					if profileProvenTier(d.Tier) {
-						<li class="standing">{ views.TierLabel(d.Tier) } in { d.Name }</li>
-					}
-					if d.Vouches > 0 {
-						<li class="vouch-count">{ profileVouchText(d) }</li>
+					if profileProvenTier(d.Tier) || d.Vouches > 0 {
+						<li class="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-1.5">
+							<span class="font-medium text-stone-800">{ d.Name }</span>
+							if profileProvenTier(d.Tier) {
+								<span class="standing chip chip-accent">{ views.TierLabel(d.Tier) }</span>
+							}
+							if d.Vouches > 0 {
+								<span class="vouch-count text-xs text-stone-500">{ profileVouchText(d) }</span>
+							}
+						</li>
 					}
 				}
 			</ul>
 			if u := auth.UserFrom(ctx); u != nil && !u.Suspended && !p.ViewerIsSelf {
-				<div class="mt-2 flex flex-wrap gap-2">
+				<div class="mt-3 flex flex-wrap gap-2">
 					for _, d := range p.Domains {
 						if d.CanVouch || d.ViewerVouched {
 							<form method="post" action={ templ.SafeURL("/u/" + p.Handle + "/vouch") } class="inline">
 								<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
 								<input type="hidden" name="domain" value={ d.Slug }/>
 								if d.ViewerVouched {
-									<button type="submit" class="btn-secondary text-xs" aria-pressed="true">{ "Withdraw vouch in " + d.Name }</button>
+									<button type="submit" class="btn-secondary border-accent/40 text-xs text-accent-ink" aria-pressed="true">
+										<svg class="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 10.5 3 3 7-7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+										{ "Withdraw vouch in " + d.Name }
+									</button>
 								} else {
-									<button type="submit" class="btn-secondary text-xs" aria-pressed="false">{ "Vouch in " + d.Name }</button>
+									<button type="submit" class="btn-secondary text-xs" aria-pressed="false">
+										<svg class="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke-linecap="round"></path></svg>
+										{ "Vouch in " + d.Name }
+									</button>
 								}
 							</form>
 						}

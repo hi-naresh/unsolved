@@ -19,8 +19,9 @@ func userTruncate(s string, n int) string {
 // the following page ("" on the last page).
 templ Members(members []service.Member, next string) {
 	@layouts.Base("Members") {
-		<h1 class="text-2xl font-semibold">Members</h1>
-		<p class="mt-2 text-sm text-stone-600">People who chose to be listed. Declared histories are unverified.</p>
+		<p class="kicker">Directory</p>
+		<h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Members</h1>
+		<p class="mt-2 text-[15px] text-stone-600">People who chose to be listed. Declared histories are unverified.</p>
 		@MembersList(members, next)
 	}
 }
@@ -28,21 +29,29 @@ templ Members(members []service.Member, next string) {
 // MembersList is the list plus its "more" link; it is also the htmx partial.
 templ MembersList(members []service.Member, next string) {
 	if len(members) == 0 {
-		<p class="mt-6 text-stone-500">Nobody here yet.</p>
+		<div class="card mt-6 px-6 py-10 text-center">
+			<p class="text-sm text-stone-600">Nobody here yet.</p>
+			<a href="/settings" class="btn-secondary mt-4">List yourself in settings</a>
+		</div>
 	} else {
-		<ul class="mt-6 divide-y divide-stone-200">
+		<ul class="mt-6 grid gap-3 sm:grid-cols-2">
 			for _, m := range members {
-				<li class="py-3">
-					<a href={ templ.SafeURL("/u/" + m.Handle) } class="font-medium hover:underline">{ m.DisplayName }</a>
-					<span class="text-sm text-stone-500">{ "@" + m.Handle }</span>
-					if m.DeclaredHistory != "" {
-						<p class="mt-1 text-sm text-stone-700">{ userTruncate(m.DeclaredHistory, 200) }</p>
-					}
+				<li class="card card-hover relative flex gap-3 p-4">
+					<span class="grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-base font-semibold text-accent-ink" aria-hidden="true">{ userInitial(m.DisplayName, m.Handle) }</span>
+					<div class="min-w-0 flex-1">
+						<a href={ templ.SafeURL("/u/" + m.Handle) } class="block truncate font-medium text-stone-900 after:absolute after:inset-0 after:rounded-xl hover:text-accent">{ m.DisplayName }</a>
+						<span class="block truncate text-xs text-stone-500">{ "@" + m.Handle }</span>
+						if m.DeclaredHistory != "" {
+							<p class="clamp-2 mt-2 text-sm leading-snug text-stone-600">{ userTruncate(m.DeclaredHistory, 200) }</p>
+						}
+					</div>
 				</li>
 			}
 		</ul>
 	}
 	if next != "" {
-		<a href={ templ.SafeURL("/members?after=" + url.QueryEscape(next)) } class="btn-secondary mt-6">More members</a>
+		<div class="mt-6 text-center">
+			<a href={ templ.SafeURL("/members?after=" + url.QueryEscape(next)) } class="btn-secondary">More members</a>
+		</div>
 	}
 }

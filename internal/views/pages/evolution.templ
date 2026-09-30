@@ -1,6 +1,10 @@
 package pages
 
 import (
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/hi-naresh/unsolved/internal/auth"
 	"github.com/hi-naresh/unsolved/internal/views"
 	"github.com/hi-naresh/unsolved/internal/views/layouts"
@@ -20,6 +24,7 @@ type EvolutionRevision struct {
 	Author         views.AuthorRef
 	Vote           partials.VoteButtonView
 	CreatedAt      string
+	Created        time.Time // for version numbers (creation order); zero = tree order
 }
 
 // EvolutionView is /p/{id}/evolution.
@@ -31,14 +36,34 @@ type EvolutionView struct {
 	Revisions  []EvolutionRevision
 }
 
-// evolutionIndent: literal classes so Tailwind sees them; depth is capped.
-var evolutionIndent = []string{"ml-0", "ml-6", "ml-12", "ml-18", "ml-24", "ml-30", "ml-36"}
-
-func evolutionIndentClass(depth int) string {
-	if depth >= len(evolutionIndent) {
-		depth = len(evolutionIndent) - 1
+func evolutionSummary(g EvolutionGraph) string {
+	n := len(g.Nodes)
+	s := strconv.Itoa(n) + " version"
+	if n != 1 {
+		s += "s"
 	}
-	return evolutionIndent[depth]
+	branches := 0
+	kids := map[int]int{}
+	for _, nd := range g.Nodes {
+		if nd.Parent >= 0 {
+			kids[nd.Parent]++
+		}
+	}
+	for _, k := range kids {
+		if k > 1 {
+			branches += k - 1
+		}
+	}
+	if branches == 1 {
+		s += " · 1 fork in the road"
+	} else if branches > 1 {
+		s += " · " + strconv.Itoa(branches) + " forks in the road"
+	}
+	return s
+}
+
+func evolutionVersionLabel(g EvolutionGraph, i int) string {
+	return "v" + strconv.Itoa(g.Nodes[i].Version)
 }
 
 templ Evolution(v EvolutionView) {
@@ -48,52 +73,208 @@ templ Evolution(v EvolutionView) {
 }
 
 templ EvolutionContent(v EvolutionView) {
-	<p class="text-sm text-stone-500"><a href={ templ.SafeURL("/p/" + v.ProblemID) } class="hover:underline">← { v.Title }</a></p>
-	<h1 class="mt-2 text-2xl font-semibold">How this evolved</h1>
-	<p class="mt-1 text-stone-600">Every version of this problem. The current one is the community's pick.</p>
-	<ol class="mt-6 space-y-3">
-		for _, r := range v.Revisions {
-			<li class={ evolutionIndentClass(r.Depth) } id={ "r-" + r.ID }>
-				<div class={ "rounded border bg-white p-4", templ.KV("border-amber-400", r.IsCurrent), templ.KV("border-stone-200", !r.IsCurrent) }>
-					<div class="flex items-start gap-3">
-						@partials.VoteButton(r.Vote)
-						<div class="min-w-0 flex-1">
-							<div class="flex flex-wrap items-center gap-x-2 text-xs text-stone-500">
-								if r.IsCurrent {
-									<span class="rounded bg-amber-100 px-1.5 py-0.5 font-medium text-amber-800">current</span>
-								}
-								@views.Author(r.Author, auth.UserFrom(ctx))
-								<span>· { r.CreatedAt }</span>
-							</div>
-							<p class="mt-1 font-medium">{ r.Title }</p>
-							if r.WhyNote != "" {
-								<p class="mt-1 text-sm text-stone-700"><span class="text-stone-500">Why:</span> { r.WhyNote }</p>
-							} else {
-								<p class="mt-1 text-sm text-stone-500">First version</p>
+	{{ g := buildEvolutionGraph(v.Revisions) }}
+	<a href={ templ.SafeURL("/p/" + v.ProblemID) } class="inline-flex max-w-full items-center gap-1 text-sm text-stone-500 hover:text-stone-900">
+		<svg class="size-4 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m12 5-5 5 5 5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+		<span class="truncate">{ v.Title }</span>
+	</a>
+	<header class="mt-3">
+		<p class="kicker">
+			if v.DomainName != "" {
+				{ v.DomainName } ·
+			}
+			Revision history
+		</p>
+		<h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">How this evolved</h1>
+		<p class="mt-2 text-[15px] leading-relaxed text-stone-600">Every version of this problem, kept side by side. The community's pick is the current one. { evolutionSummary(g) }.</p>
+	</header>
+	if len(g.Nodes) > 0 {
+		@evolutionGraphCard(g, v)
+	}
+	<ol class="mt-6 space-y-3" aria-label="Versions">
+		for i, r := range v.Revisions {
+			@evolutionCard(v, g, i, r)
+		}
+	</ol>
+}
+
+templ evolutionGraphCard(g EvolutionGraph, v EvolutionView) {
+	<section class="card mt-6 overflow-hidden" aria-labelledby="evo-graph-title">
+		<div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-stone-200 px-4 py-2.5">
+			<h2 id="evo-graph-title" class="kicker">Revision tree</h2>
+			@evolutionLegend()
+		</div>
+		<div class="evo-canvas overflow-x-auto">
+			if g.Width > 340 {
+				<p class="px-4 pt-2 text-[11px] text-stone-500 sm:hidden" aria-hidden="true">Swipe to see the whole tree →</p>
+			}
+			<svg
+				class="evo-graph mx-auto block"
+				width={ evoF(g.Width) }
+				height={ evoF(g.Height) }
+				viewBox={ "0 0 " + evoF(g.Width) + " " + evoF(g.Height) }
+				role="img"
+				aria-labelledby="evo-graph-alt"
+			>
+				<title id="evo-graph-alt">{ "Revision tree of " + v.Title + ": " + evolutionSummary(g) + ". Each version is listed below." }</title>
+				<g fill="none" stroke-linecap="round">
+					for _, e := range g.Edges {
+						if !e.OnLineage {
+							<path d={ e.D } class="stroke-stone-300" stroke-width="1.5"></path>
+						}
+					}
+					for _, e := range g.Edges {
+						if e.OnLineage {
+							<path d={ e.D } class="stroke-accent" stroke-width="2.25"></path>
+						}
+					}
+				</g>
+				for _, n := range g.Nodes {
+					<a href={ templ.SafeURL("#r-" + n.ID) } class="evo-node">
+						<title>{ n.Tooltip }</title>
+						<circle cx={ evoF(n.X) } cy={ evoF(n.Y) } r={ evoF(n.R + 9) } class="evo-hit fill-transparent"></circle>
+						if n.IsCurrent {
+							<circle cx={ evoF(n.X) } cy={ evoF(n.Y) } r={ evoF(n.R + 5) } class="fill-accent/15 stroke-accent/40" stroke-width="1"></circle>
+						}
+						if n.IsRoot {
+							<circle cx={ evoF(n.X) } cy={ evoF(n.Y) } r={ evoF(n.R + 3.5) } fill="none" class="stroke-stone-400" stroke-width="1.25" stroke-dasharray="2.5 2.5"></circle>
+						}
+						<circle
+							cx={ evoF(n.X) }
+							cy={ evoF(n.Y) }
+							r={ evoF(n.R) }
+							stroke-width="2"
+							class={ "evo-dot",
+								templ.KV("fill-accent stroke-accent", n.IsCurrent),
+								templ.KV("fill-white stroke-accent", !n.IsCurrent && n.OnLineage),
+								templ.KV("fill-white stroke-stone-400", !n.IsCurrent && !n.OnLineage) }
+						></circle>
+						if n.IsCurrent {
+							<g transform={ "translate(" + evoF(n.X) + " " + evoF(n.Y-n.R-17) + ")" }>
+								<rect x="-29" y="-9" width="58" height="17" rx="8.5" class="fill-accent"></rect>
+								<text y="3.5" text-anchor="middle" class="fill-stone-50 text-[9.5px] font-semibold">current</text>
+							</g>
+						}
+						<text x={ evoF(n.X) } y={ evoF(n.Y + n.R + 15) } text-anchor="middle" class="text-[11px]">
+							<tspan class={ "font-semibold", templ.KV("fill-accent", n.IsCurrent), templ.KV("fill-stone-800", !n.IsCurrent) }>{ "v" + strconv.Itoa(n.Version) }</tspan>
+							<tspan class="fill-stone-500" dx="4">{ strconv.Itoa(int(n.Votes)) + "▲" }</tspan>
+						</text>
+						if n.Caption != "" {
+							<text x={ evoF(n.X) } y={ evoF(n.Y + n.R + 29) } text-anchor="middle" class="fill-stone-500 text-[10px]">{ n.Caption }</text>
+						}
+					</a>
+				}
+			</svg>
+		</div>
+	</section>
+}
+
+templ evolutionLegend() {
+	<ul class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-500" aria-label="Legend">
+		<li class="flex items-center gap-1.5">
+			<svg class="size-3.5" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5" class="fill-accent"></circle></svg>
+			Current
+		</li>
+		<li class="flex items-center gap-1.5">
+			<svg class="size-3.5" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="none" class="stroke-stone-400" stroke-width="1.25" stroke-dasharray="2 2"></circle><circle cx="7" cy="7" r="3" class="fill-white stroke-stone-400" stroke-width="1.5"></circle></svg>
+			First
+		</li>
+		<li class="flex items-center gap-1.5">
+			<svg class="h-3.5 w-5" viewBox="0 0 20 14" aria-hidden="true"><path d="M1 7h18" class="stroke-accent" stroke-width="2" stroke-linecap="round"></path></svg>
+			Path to current
+		</li>
+		<li class="flex items-center gap-1.5">
+			<svg class="h-3.5 w-6" viewBox="0 0 24 14" aria-hidden="true"><circle cx="4" cy="7" r="2.5" class="fill-white stroke-stone-400" stroke-width="1.25"></circle><circle cx="15" cy="7" r="5.5" class="fill-white stroke-stone-400" stroke-width="1.25"></circle></svg>
+			Size = votes
+		</li>
+	</ul>
+}
+
+templ evolutionCard(v EvolutionView, g EvolutionGraph, i int, r EvolutionRevision) {
+	{{ n := g.Nodes[i] }}
+	<li id={ "r-" + r.ID } class={ "rev-card card scroll-mt-20 p-4 sm:p-5", templ.KV("rev-current", r.IsCurrent) }>
+		<div class="flex items-start gap-3 sm:gap-4">
+			<div class="flex w-12 shrink-0 flex-col items-center gap-2">
+				<span
+					class={ "grid size-9 place-items-center rounded-lg text-sm font-semibold tabular-nums",
+						templ.KV("bg-accent text-white", r.IsCurrent),
+						templ.KV("bg-stone-100 text-stone-700", !r.IsCurrent) }
+					title={ "Version " + strconv.Itoa(n.Version) }
+				>{ evolutionVersionLabel(g, i) }</span>
+				@partials.VoteButton(r.Vote)
+			</div>
+			<div class="min-w-0 flex-1">
+				<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-stone-500">
+					if r.IsCurrent {
+						<span class="chip chip-accent">current</span>
+					}
+					if !n.IsRoot {
+						<a href={ templ.SafeURL("#r-" + g.Nodes[n.Parent].ID) } class="hover:text-stone-900">{ "from " + evolutionVersionLabel(g, n.Parent) }</a>
+					}
+					<span class="inline-flex items-center gap-1">
+						@views.Author(r.Author, auth.UserFrom(ctx))
+					</span>
+					<span aria-hidden="true">·</span>
+					<span>{ r.CreatedAt }</span>
+				</div>
+				if r.WhyNote != "" {
+					<p class="mt-2 text-[15px] font-medium leading-snug text-stone-900"><span class="font-normal text-stone-500">Why:</span> { r.WhyNote }</p>
+				} else if n.IsRoot {
+					<p class="mt-2 text-[15px] font-medium leading-snug text-stone-900">First version</p>
+				}
+				<div class="mt-2.5 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
+					<p class="text-sm font-medium text-stone-800">{ r.Title }</p>
+					if p := evolutionFirstLine(r.Pain, 400); p != "" {
+						<p class="clamp-2 mt-0.5 text-sm text-stone-600">{ p }</p>
+					}
+					if len(n.Changed) > 0 {
+						<p class="mt-1.5 flex flex-wrap items-center gap-1 text-[11px] text-stone-500">
+							<span>Changed</span>
+							for _, c := range n.Changed {
+								<span class="rounded bg-amber-500/12 px-1.5 py-px font-medium text-amber-800 dark:text-amber-300">{ c }</span>
 							}
-							<details class="mt-2 text-sm">
-								<summary class="cursor-pointer text-stone-600 hover:underline">Full text</summary>
-								<h3 class="mt-2 font-medium">How it's done today</h3>
-								<div class="whitespace-pre-line">{ r.CurrentProcess }</div>
-								<h3 class="mt-2 font-medium">What goes wrong</h3>
-								<div class="whitespace-pre-line">{ r.Pain }</div>
-								<h3 class="mt-2 font-medium">Already tried</h3>
-								<div class="whitespace-pre-line">{ r.Tried }</div>
-							</details>
-							if v.CanWrite {
-								<div class="mt-2 flex gap-3 text-sm">
-									<a href={ templ.SafeURL("/p/" + v.ProblemID + "/revise?from=" + r.ID) } class="hover:underline">Revise from this version</a>
-									<form method="post" action={ templ.SafeURL("/p/" + v.ProblemID + "/fork") } class="inline">
-										<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
-										<input type="hidden" name="revision_id" value={ r.ID }/>
-										<button type="submit" class="hover:underline">Fork from this version</button>
-									</form>
+						</p>
+					}
+				</div>
+				<div class="mt-2 flex flex-wrap items-center gap-x-1 text-sm">
+					<details class="rev-full group open:w-full">
+						<summary class="btn-ghost -ml-2.5 w-fit cursor-pointer list-none text-xs [&::-webkit-details-marker]:hidden">
+							<svg class="size-3.5 transition group-open:rotate-90" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m8 5 5 5-5 5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+							Full text
+						</summary>
+						<div class="mt-2 space-y-3 border-l-2 border-stone-200 pl-3 text-sm leading-relaxed text-stone-700">
+							<div>
+								<h3 class="kicker">How it's done today</h3>
+								<div class="mt-0.5 whitespace-pre-line">{ r.CurrentProcess }</div>
+							</div>
+							<div>
+								<h3 class="kicker">What goes wrong</h3>
+								<div class="mt-0.5 whitespace-pre-line">{ r.Pain }</div>
+							</div>
+							if strings.TrimSpace(r.Tried) != "" {
+								<div>
+									<h3 class="kicker">Already tried</h3>
+									<div class="mt-0.5 whitespace-pre-line">{ r.Tried }</div>
 								</div>
 							}
 						</div>
-					</div>
+					</details>
+					if v.CanWrite {
+						<a href={ templ.SafeURL("/p/" + v.ProblemID + "/revise?from=" + r.ID) } class="btn-ghost text-xs">
+							<svg class="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M13.5 3.5 16.5 6.5 7 16H4v-3z" stroke-linejoin="round"></path></svg>
+							Revise<span class="hidden sm:inline">from this version</span>
+						</a>
+						<form method="post" action={ templ.SafeURL("/p/" + v.ProblemID + "/fork") } class="inline">
+							<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+							<input type="hidden" name="revision_id" value={ r.ID }/>
+							<button type="submit" class="btn-ghost text-xs">
+								<svg class="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="6" cy="4.5" r="1.8"></circle><circle cx="14" cy="4.5" r="1.8"></circle><circle cx="10" cy="15.5" r="1.8"></circle><path d="M6 6.3v1.2a2.5 2.5 0 0 0 2.5 2.5h3A2.5 2.5 0 0 0 14 7.5V6.3M10 10v3.7"></path></svg>
+								Fork<span class="hidden sm:inline">from this version</span>
+							</button>
+						</form>
+					}
 				</div>
-			</li>
-		}
-	</ol>
+			</div>
+		</div>
+	</li>
 }
