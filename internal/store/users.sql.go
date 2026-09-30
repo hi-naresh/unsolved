@@ -216,6 +216,20 @@ func (q *Queries) ListIdentitiesByUser(ctx context.Context, userID uuid.UUID) ([
 	return items, nil
 }
 
+const setUserHandle = `-- name: SetUserHandle :exec
+UPDATE users SET handle = $2 WHERE id = $1 AND deleted_at IS NULL
+`
+
+type SetUserHandleParams struct {
+	ID     uuid.UUID
+	Handle string
+}
+
+func (q *Queries) SetUserHandle(ctx context.Context, arg SetUserHandleParams) error {
+	_, err := q.db.Exec(ctx, setUserHandle, arg.ID, arg.Handle)
+	return err
+}
+
 const setUserHandleAndDirectory = `-- name: SetUserHandleAndDirectory :exec
 UPDATE users SET handle = $2, in_directory = $3
 WHERE id = $1 AND deleted_at IS NULL

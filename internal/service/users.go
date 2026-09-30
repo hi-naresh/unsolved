@@ -156,6 +156,9 @@ func (s *Service) CompleteWelcome(ctx context.Context, userID uuid.UUID, handle 
 	if err := ValidateHandle(handle); err != nil {
 		return err
 	}
+	if err := s.guardAdminHandle(ctx, userID, handle); err != nil {
+		return err
+	}
 	err := s.Store.SetUserHandleAndDirectory(ctx, store.SetUserHandleAndDirectoryParams{ID: userID, Handle: handle, InDirectory: inDirectory})
 	if handleTaken(err) {
 		return Invalid("handle", "That handle is taken. Pick another.")
@@ -187,6 +190,9 @@ func SettingsOf(u store.User) Settings {
 func (s *Service) UpdateSettings(ctx context.Context, userID uuid.UUID, in Settings) error {
 	in.Handle = NormalizeHandle(in.Handle)
 	if err := ValidateHandle(in.Handle); err != nil {
+		return err
+	}
+	if err := s.guardAdminHandle(ctx, userID, in.Handle); err != nil {
 		return err
 	}
 	history := strings.TrimSpace(in.DeclaredHistory)
@@ -346,4 +352,53 @@ func parseDirectoryCursor(s string) (time.Time, uuid.UUID, bool) {
 		return time.Time{}, uuid.Nil, false
 	}
 	return time.UnixMicro(us).UTC(), id, true
+}
+
+// Admin rights come from ADMIN_HANDLES, so admin handles can never change
+// hands through self-service: nobody can claim one on /welcome or /settings,
+// and whoever holds one can't rename away from it (which would free it for
+// someone else). An operator assigns one with `seed admin-handle`.
+func (s *Service) guardAdminHandle(ctx context.Context, userID uuid.UUID, next string) error {
+	u, err := s.Store.GetUserByID(ctx, userID)
+	if err != nil {
+		return notFound(err)
+	}
+	if u.Handle == next {
+		return nil
+	}
+	if s.Cfg.IsAdmin(next) {
+		return Invalid("handle", "That handle is reserved. Pick another.")
+	}
+	if s.Cfg.IsAdmin(u.Handle) {
+		return Invalid("handle", "Admin handles can't be changed here.")
+	}
+	return nil
+}
+
+// AssignAdminHandle gives the user currently called fromHandle the admin
+// handle adminHandle (which must be listed in ADMIN_HANDLES and unclaimed).
+// Operator-only: run through cmd/seed with database access.
+func (s *Service) AssignAdminHandle(ctx context.Context, fromHandle, adminHandle string) error {
+	adminHandle = NormalizeHandle(adminHandle)
+	if !s.Cfg.IsAdmin(adminHandle) {
+		return Invalid("handle", adminHandle+" is not listed in ADMIN_HANDLES")
+	}
+	if !handleRE.MatchString(adminHandle) {
+		return Invalid("handle", "invalid handle")
+	}
+	u, err := s.Store.GetUserByHandle(ctx, NormalizeHandle(fromHandle))
+	if err != nil {
+		return notFound(err)
+	}
+	if u.DeletedAt != nil {
+		return ErrNotFound
+	}
+	err = s.Store.SetUserHandle(ctx, store.SetUserHandleParams{ID: u.ID, Handle: adminHandle})
+	if handleTaken(err) {
+		return ErrConflict
+	}
+	if err == nil {
+		s.Log.Warn("admin handle assigned", "user_id", u.ID, "handle", adminHandle)
+	}
+	return err
 }

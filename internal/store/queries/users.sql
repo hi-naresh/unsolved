@@ -40,3 +40,6 @@ WHERE in_directory AND deleted_at IS NULL
        OR (created_at, id) > (sqlc.narg(after_created_at)::timestamptz, sqlc.narg(after_id)::uuid))
 ORDER BY created_at, id
 LIMIT sqlc.arg(max_rows);
+
+-- name: SetUserHandle :exec
+UPDATE users SET handle = $2 WHERE id = $1 AND deleted_at IS NULL;

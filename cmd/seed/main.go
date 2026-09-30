@@ -1,5 +1,10 @@
 // Command seed loads the five launch seed problems (is_seed = true). It is
 // idempotent: re-running it skips seeds that already exist.
+//
+//	seed                                  load seed problems
+//	seed admin-handle <current> <admin>   give an ADMIN_HANDLES handle to a user
+//
+// Admin handles can't be claimed through the site, so an operator assigns them.
 package main
 
 import (
@@ -43,6 +48,9 @@ func run(log *slog.Logger) error {
 		return err
 	}
 	svc := service.New(st, jobsClient, ranking.NewDecayScorer(cfg.RankHalfLife), service.NewWeigher(st, cfg), cfg, log)
+	if len(os.Args) == 4 && os.Args[1] == "admin-handle" {
+		return svc.AssignAdminHandle(ctx, os.Args[2], os.Args[3])
+	}
 	n, err := svc.Seed(ctx)
 	if err != nil {
 		return err

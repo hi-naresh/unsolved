@@ -421,3 +421,31 @@ func TestDeletedHandle(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 }
+
+func TestAdminHandlesCannotChangeHandsBySelfService(t *testing.T) {
+	ctx := context.Background()
+	svc := testService(t)
+	svc.Cfg.AdminHandles = []string{"boss_handle"}
+	u, _, err := svc.SignInWithIdentity(ctx, store.ProviderX, "admin-guard-"+uuid.NewString(), "", "A")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.CompleteWelcome(ctx, u.ID, "boss_handle", false); err == nil {
+		t.Fatal("claimed an admin handle on /welcome")
+	}
+	if err := svc.UpdateSettings(ctx, u.ID, Settings{Handle: "boss_handle"}); err == nil {
+		t.Fatal("claimed an admin handle in settings")
+	}
+	if err := svc.AssignAdminHandle(ctx, u.Handle, "boss_handle"); err != nil {
+		t.Fatalf("operator assign: %v", err)
+	}
+	if err := svc.UpdateSettings(ctx, u.ID, Settings{Handle: "someone_else"}); err == nil {
+		t.Fatal("renamed away from an admin handle")
+	}
+	if err := svc.UpdateSettings(ctx, u.ID, Settings{Handle: "boss_handle", InDirectory: true}); err != nil {
+		t.Fatalf("keeping the admin handle should be fine: %v", err)
+	}
+	if err := svc.AssignAdminHandle(ctx, u.Handle, "not_listed"); err == nil {
+		t.Fatal("assigned a handle not in ADMIN_HANDLES")
+	}
+}
