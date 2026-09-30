@@ -7,6 +7,7 @@ package store
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -124,4 +125,135 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.Email,
 	)
 	return i, err
+}
+
+const listDirectory = `-- name: ListDirectory :many
+SELECT id, handle, display_name, declared_history, created_at
+FROM users
+WHERE in_directory AND deleted_at IS NULL
+  AND ($1::timestamptz IS NULL
+       OR (created_at, id) > ($1::timestamptz, $2::uuid))
+ORDER BY created_at, id
+LIMIT $3
+`
+
+type ListDirectoryParams struct {
+	AfterCreatedAt *time.Time
+	AfterID        *uuid.UUID
+	MaxRows        int32
+}
+
+type ListDirectoryRow struct {
+	ID              uuid.UUID
+	Handle          string
+	DisplayName     string
+	DeclaredHistory *string
+	CreatedAt       time.Time
+}
+
+// /members: opted-in, not deleted, keyset by (created_at, id).
+func (q *Queries) ListDirectory(ctx context.Context, arg ListDirectoryParams) ([]ListDirectoryRow, error) {
+	rows, err := q.db.Query(ctx, listDirectory, arg.AfterCreatedAt, arg.AfterID, arg.MaxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDirectoryRow
+	for rows.Next() {
+		var i ListDirectoryRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Handle,
+			&i.DisplayName,
+			&i.DeclaredHistory,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listIdentitiesByUser = `-- name: ListIdentitiesByUser :many
+SELECT provider, provider_uid, profile_url, created_at
+FROM identities WHERE user_id = $1
+ORDER BY created_at, provider
+`
+
+type ListIdentitiesByUserRow struct {
+	Provider    Provider
+	ProviderUid string
+	ProfileUrl  *string
+	CreatedAt   time.Time
+}
+
+func (q *Queries) ListIdentitiesByUser(ctx context.Context, userID uuid.UUID) ([]ListIdentitiesByUserRow, error) {
+	rows, err := q.db.Query(ctx, listIdentitiesByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListIdentitiesByUserRow
+	for rows.Next() {
+		var i ListIdentitiesByUserRow
+		if err := rows.Scan(
+			&i.Provider,
+			&i.ProviderUid,
+			&i.ProfileUrl,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const setUserHandleAndDirectory = `-- name: SetUserHandleAndDirectory :exec
+UPDATE users SET handle = $2, in_directory = $3
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type SetUserHandleAndDirectoryParams struct {
+	ID          uuid.UUID
+	Handle      string
+	InDirectory bool
+}
+
+// /welcome: the new member picks a handle and directory opt-in.
+func (q *Queries) SetUserHandleAndDirectory(ctx context.Context, arg SetUserHandleAndDirectoryParams) error {
+	_, err := q.db.Exec(ctx, setUserHandleAndDirectory, arg.ID, arg.Handle, arg.InDirectory)
+	return err
+}
+
+const updateUserSettings = `-- name: UpdateUserSettings :exec
+UPDATE users
+SET handle = $2, in_directory = $3, declared_history = $4, email = $5
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateUserSettingsParams struct {
+	ID              uuid.UUID
+	Handle          string
+	InDirectory     bool
+	DeclaredHistory *string
+	Email           *string
+}
+
+func (q *Queries) UpdateUserSettings(ctx context.Context, arg UpdateUserSettingsParams) error {
+	_, err := q.db.Exec(ctx, updateUserSettings,
+		arg.ID,
+		arg.Handle,
+		arg.InDirectory,
+		arg.DeclaredHistory,
+		arg.Email,
+	)
+	return err
 }
