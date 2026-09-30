@@ -1,0 +1,21 @@
+package views
+
+import "github.com/hi-naresh/unsolved/internal/auth"
+
+// Author renders authorship. Named → @handle linking to the profile.
+// Anonymous → "Anonymous" plus the author's tier for that domain, no link.
+templ Author(row AuthorRef, viewer *auth.User) {
+	if row.Anonymous {
+		<span class="author author-anon">Anonymous <span class="tier">· { TierLabel(row.Tier) }</span></span>
+	} else if row.Deleted {
+		<span class="author author-deleted">deleted user</span>
+	} else {
+		<a class="author font-medium hover:underline" href={ templ.SafeURL("/u/" + row.Handle) }>{ "@" + row.Handle }</a>
+		if row.Tier != "" && row.Tier != "member" {
+			<span class="tier text-xs text-stone-500">· { TierLabel(row.Tier) }</span>
+		}
+		if viewer != nil && viewer.Handle == row.Handle {
+			<span class="text-xs text-stone-400">(you)</span>
+		}
+	}
+}

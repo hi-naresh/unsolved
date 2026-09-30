@@ -1,0 +1,17 @@
+package pages
+
+import (
+	"github.com/hi-naresh/unsolved/internal/views/layouts"
+	"github.com/hi-naresh/unsolved/internal/views/partials"
+)
+
+// MetaBoard is /meta: problems about Unsolved itself, by score.
+templ MetaBoard(list partials.ProblemRowsView) {
+	@layouts.Base("Meta") {
+		<h1 class="text-2xl font-semibold">Meta</h1>
+		<p class="mt-1 text-stone-600">Problems with Unsolved itself.</p>
+		<section class="mt-6">
+			@partials.ProblemList(list)
+		</section>
+	}
+}

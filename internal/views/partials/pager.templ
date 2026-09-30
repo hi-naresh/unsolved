@@ -1,0 +1,16 @@
+package partials
+
+// Pager is the "more" row at the end of a keyset page. With htmx it swaps
+// itself for the next page's rows; without JS it is a normal link.
+templ Pager(moreURL string) {
+	<li class="py-4 text-center">
+		<a
+			href={ templ.SafeURL(moreURL) }
+			hx-get={ moreURL }
+			hx-target="closest li"
+			hx-swap="outerHTML"
+			class="btn-secondary"
+			data-more
+		>More</a>
+	</li>
+}

@@ -1,0 +1,18 @@
+# Unsolved ML service. Internal only: there is no [http_service] or
+# [[services]] block, so Fly allocates no public IP and the app is reachable
+# only over the private network as http://unsolved-ml.internal:8000.
+# The web app's ML_URL secret points there.
+app = "unsolved-ml"
+primary_region = "lhr"
+kill_signal = "SIGTERM"
+kill_timeout = "10s"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[deploy]
+  strategy = "rolling"
+
+[[vm]]
+  size = "shared-cpu-2x"
+  memory = "1gb"

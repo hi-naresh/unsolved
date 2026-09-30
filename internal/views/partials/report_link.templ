@@ -1,0 +1,30 @@
+package partials
+
+import "github.com/hi-naresh/unsolved/internal/auth"
+
+// ReportLink is a small "Report" disclosure for a problem revision, solution
+// revision or user. kind is problem_revision | solution_revision | user; id is
+// the target's uuid. It posts via htmx to /report and swaps itself for
+// ReportThanks; without JS the form posts normally and redirects back.
+templ ReportLink(kind string, id string) {
+	<details class="report-link inline-block text-xs text-stone-500">
+		<summary class="cursor-pointer select-none hover:underline">Report</summary>
+		<form
+			method="post"
+			action="/report"
+			hx-post="/report"
+			hx-target="closest details"
+			hx-swap="outerHTML"
+			class="mt-2 w-72 space-y-2 rounded border border-stone-200 bg-white p-3 shadow-sm"
+		>
+			<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+			<input type="hidden" name="target_kind" value={ kind }/>
+			<input type="hidden" name="target_id" value={ id }/>
+			<label class="block text-stone-700">
+				What's wrong with this?
+				<textarea name="reason" rows="3" minlength="5" maxlength="500" required class="field"></textarea>
+			</label>
+			<button type="submit" class="btn-secondary">Send report</button>
+		</form>
+	</details>
+}

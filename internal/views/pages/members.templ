@@ -1,0 +1,48 @@
+package pages
+
+import (
+	"net/url"
+
+	"github.com/hi-naresh/unsolved/internal/service"
+	"github.com/hi-naresh/unsolved/internal/views/layouts"
+)
+
+func userTruncate(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "…"
+}
+
+// Members is the directory of opted-in users. next is the keyset cursor for
+// the following page ("" on the last page).
+templ Members(members []service.Member, next string) {
+	@layouts.Base("Members") {
+		<h1 class="text-2xl font-semibold">Members</h1>
+		<p class="mt-2 text-sm text-stone-600">People who chose to be listed. Declared histories are unverified.</p>
+		@MembersList(members, next)
+	}
+}
+
+// MembersList is the list plus its "more" link; it is also the htmx partial.
+templ MembersList(members []service.Member, next string) {
+	if len(members) == 0 {
+		<p class="mt-6 text-stone-500">Nobody here yet.</p>
+	} else {
+		<ul class="mt-6 divide-y divide-stone-200">
+			for _, m := range members {
+				<li class="py-3">
+					<a href={ templ.SafeURL("/u/" + m.Handle) } class="font-medium hover:underline">{ m.DisplayName }</a>
+					<span class="text-sm text-stone-500">{ "@" + m.Handle }</span>
+					if m.DeclaredHistory != "" {
+						<p class="mt-1 text-sm text-stone-700">{ userTruncate(m.DeclaredHistory, 200) }</p>
+					}
+				</li>
+			}
+		</ul>
+	}
+	if next != "" {
+		<a href={ templ.SafeURL("/members?after=" + url.QueryEscape(next)) } class="btn-secondary mt-6">More members</a>
+	}
+}

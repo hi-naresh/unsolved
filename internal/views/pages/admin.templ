@@ -1,0 +1,165 @@
+package pages
+
+import (
+	"github.com/hi-naresh/unsolved/internal/auth"
+	"github.com/hi-naresh/unsolved/internal/views"
+	"github.com/hi-naresh/unsolved/internal/views/layouts"
+)
+
+// AdminReport is one unresolved report as the admin page shows it. It holds
+// no author ids: Handle is the reported user's handle, or the revision
+// author's handle only when the revision is named (empty when anonymous).
+type AdminReport struct {
+	ID           string
+	Kind         string // problem_revision | solution_revision | user
+	Title        string // problem revision title
+	Excerpt      string // revision text excerpt
+	ProblemID    string // problem the revision belongs to; empty for user reports
+	ProblemState string // open | solved | invalid
+	OnMeta       bool
+	Anonymous    bool
+	Handle       string
+	Suspended    bool
+	Deleted      bool
+	Tier         string // revision author's tier in the problem's domain
+	Reporter     string
+	Reason       string
+	Age          string
+}
+
+// adminAuthor is the revision author as an AuthorRef, so /admin renders
+// authorship (and the tier on anonymous posts) like every other page.
+func adminAuthor(rep AdminReport) views.AuthorRef {
+	if rep.Anonymous {
+		return views.NewAuthorRef("anonymous", "", false, rep.Tier)
+	}
+	return views.NewAuthorRef("named", rep.Handle, rep.Deleted || rep.Handle == "", rep.Tier)
+}
+
+func adminKindLabel(k string) string {
+	switch k {
+	case "problem_revision":
+		return "Problem revision"
+	case "solution_revision":
+		return "Solution revision"
+	default:
+		return "User"
+	}
+}
+
+// Admin is the /admin page: unresolved reports, oldest first.
+templ Admin(reports []AdminReport, next string) {
+	@layouts.Base("Admin") {
+		<div class="flex items-baseline justify-between gap-4">
+			<h1 class="text-2xl font-semibold">Reports</h1>
+			<a href="/admin/merges" class="ml-auto text-sm underline">Merge suggestions</a>
+			<form method="post" action="/admin/rescore">
+				@adminCSRF()
+				<button type="submit" class="btn-secondary" title="Rebuild every stored score from the vote tables (after a half-life or weight change)">Rescore all</button>
+			</form>
+		</div>
+		<p class="mt-1 text-sm text-stone-500">Unresolved, oldest first. Every action here is logged with your id.</p>
+		if len(reports) == 0 {
+			<p class="mt-8 text-stone-600">No open reports.</p>
+		}
+		<ul class="mt-6 space-y-4">
+			for _, rep := range reports {
+				@adminReportItem(rep)
+			}
+		</ul>
+		if next != "" {
+			<p class="mt-6"><a class="hover:underline" href={ templ.SafeURL("/admin?after=" + next) }>Next page →</a></p>
+		}
+	}
+}
+
+templ adminCSRF() {
+	<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+}
+
+templ adminReportItem(rep AdminReport) {
+	<li class="admin-report rounded border border-stone-200 bg-white p-4" id={ "report-" + rep.ID }>
+		<div class="flex flex-wrap items-baseline gap-x-2 text-xs text-stone-500">
+			<span class="font-medium uppercase tracking-wide">{ adminKindLabel(rep.Kind) }</span>
+			<span>· reported by <a class="hover:underline" href={ templ.SafeURL("/u/" + rep.Reporter) }>{ "@" + rep.Reporter }</a></span>
+			<span>· { rep.Age }</span>
+		</div>
+		<div class="mt-2">
+			if rep.Kind == "user" {
+				if rep.Deleted {
+					<span class="text-stone-600">deleted user</span>
+				} else {
+					<a class="font-medium hover:underline" href={ templ.SafeURL("/u/" + rep.Handle) }>{ "@" + rep.Handle }</a>
+				}
+			} else {
+				if rep.Title != "" {
+					<a class="font-medium hover:underline" href={ templ.SafeURL("/p/" + rep.ProblemID) }>{ rep.Title }</a>
+				} else {
+					<a class="font-medium hover:underline" href={ templ.SafeURL("/p/" + rep.ProblemID) }>View problem</a>
+				}
+				<p class="mt-1 whitespace-pre-line text-sm text-stone-700">{ rep.Excerpt }</p>
+				<p class="mt-1 text-xs text-stone-500">
+					by
+					@views.Author(adminAuthor(rep), auth.UserFrom(ctx))
+					if rep.ProblemState != "" {
+						· problem is { rep.ProblemState }
+					}
+					if rep.OnMeta {
+						· on meta board
+					}
+				</p>
+			}
+			if rep.Suspended {
+				<p class="mt-1 text-xs font-medium text-red-700">User is suspended</p>
+			}
+		</div>
+		<blockquote class="mt-3 border-l-2 border-stone-300 pl-3 text-sm text-stone-800">{ rep.Reason }</blockquote>
+		<div class="mt-4 flex flex-wrap items-start gap-2 text-sm">
+			<form method="post" action={ templ.SafeURL("/admin/reports/" + rep.ID + "/resolve") }>
+				@adminCSRF()
+				<button type="submit" class="btn">Resolve</button>
+			</form>
+			if rep.ProblemID != "" {
+				if rep.ProblemState == "invalid" {
+					<form method="post" action={ templ.SafeURL("/admin/problems/" + rep.ProblemID + "/reopen") }>
+						@adminCSRF()
+						<button type="submit" class="btn-secondary">Reopen problem</button>
+					</form>
+				} else {
+					<form method="post" action={ templ.SafeURL("/admin/problems/" + rep.ProblemID + "/invalid") } class="flex gap-2">
+						@adminCSRF()
+						<input type="text" name="reason" required maxlength="500" placeholder="Reason for Invalid" class="rounded border border-stone-300 px-2 py-1 text-sm"/>
+						<button type="submit" class="btn-secondary">Mark problem Invalid</button>
+					</form>
+				}
+				<form method="post" action={ templ.SafeURL("/admin/problems/" + rep.ProblemID + "/meta") }>
+					@adminCSRF()
+					<button type="submit" class="btn-secondary">
+						if rep.OnMeta {
+							Remove from meta board
+						} else {
+							Move to meta board
+						}
+					</button>
+				</form>
+			}
+			if rep.Handle != "" && !rep.Deleted {
+				if rep.Suspended {
+					<form method="post" action={ templ.SafeURL("/admin/users/" + rep.Handle + "/unsuspend") }>
+						@adminCSRF()
+						<button type="submit" class="btn-secondary">{ "Unsuspend @" + rep.Handle }</button>
+					</form>
+				} else {
+					<form method="post" action={ templ.SafeURL("/admin/users/" + rep.Handle + "/suspend") }>
+						@adminCSRF()
+						<button type="submit" class="btn-secondary">{ "Suspend @" + rep.Handle }</button>
+					</form>
+				}
+				<form method="post" action={ templ.SafeURL("/admin/users/" + rep.Handle + "/zero-votes") }>
+					@adminCSRF()
+					<button type="submit" class="btn-secondary" title="Set all of this user's vote weights to 0 and rescore the affected problems">Zero votes</button>
+				</form>
+			}
+		</div>
+	</li>
+}

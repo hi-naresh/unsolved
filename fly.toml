@@ -1,0 +1,41 @@
+app = "unsolved"
+primary_region = "lhr"
+kill_signal = "SIGTERM"
+kill_timeout = "15s"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[deploy]
+  # Migrations run before new machines start.
+  release_command = "/app/migrate up"
+  strategy = "rolling"
+
+[env]
+  SESSION_TTL = "720h"
+  RANK_HALF_LIFE = "720h"
+  # BASE_URL, DATABASE_URL, provider secrets, POSTMARK_TOKEN, SENTRY_DSN,
+  # ADMIN_HANDLES and the private ranking values are Fly secrets.
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 2
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "15s"
+    method = "GET"
+    path = "/healthz"
+    timeout = "2s"
+
+# Prometheus scrapes the internal port only; it is not exposed publicly.
+[metrics]
+  port = 9091
+  path = "/metrics"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

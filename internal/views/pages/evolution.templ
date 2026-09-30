@@ -1,0 +1,99 @@
+package pages
+
+import (
+	"github.com/hi-naresh/unsolved/internal/auth"
+	"github.com/hi-naresh/unsolved/internal/views"
+	"github.com/hi-naresh/unsolved/internal/views/layouts"
+	"github.com/hi-naresh/unsolved/internal/views/partials"
+)
+
+// EvolutionRevision is one node of the revision tree.
+type EvolutionRevision struct {
+	ID             string
+	Depth          int
+	Title          string
+	CurrentProcess string
+	Pain           string
+	Tried          string
+	WhyNote        string
+	IsCurrent      bool
+	Author         views.AuthorRef
+	Vote           partials.VoteButtonView
+	CreatedAt      string
+}
+
+// EvolutionView is /p/{id}/evolution.
+type EvolutionView struct {
+	ProblemID  string
+	Title      string
+	DomainName string
+	CanWrite   bool
+	Revisions  []EvolutionRevision
+}
+
+// evolutionIndent: literal classes so Tailwind sees them; depth is capped.
+var evolutionIndent = []string{"ml-0", "ml-6", "ml-12", "ml-18", "ml-24", "ml-30", "ml-36"}
+
+func evolutionIndentClass(depth int) string {
+	if depth >= len(evolutionIndent) {
+		depth = len(evolutionIndent) - 1
+	}
+	return evolutionIndent[depth]
+}
+
+templ Evolution(v EvolutionView) {
+	@layouts.Base("How this evolved") {
+		@EvolutionContent(v)
+	}
+}
+
+templ EvolutionContent(v EvolutionView) {
+	<p class="text-sm text-stone-500"><a href={ templ.SafeURL("/p/" + v.ProblemID) } class="hover:underline">← { v.Title }</a></p>
+	<h1 class="mt-2 text-2xl font-semibold">How this evolved</h1>
+	<p class="mt-1 text-stone-600">Every version of this problem. The current one is the community's pick.</p>
+	<ol class="mt-6 space-y-3">
+		for _, r := range v.Revisions {
+			<li class={ evolutionIndentClass(r.Depth) } id={ "r-" + r.ID }>
+				<div class={ "rounded border bg-white p-4", templ.KV("border-amber-400", r.IsCurrent), templ.KV("border-stone-200", !r.IsCurrent) }>
+					<div class="flex items-start gap-3">
+						@partials.VoteButton(r.Vote)
+						<div class="min-w-0 flex-1">
+							<div class="flex flex-wrap items-center gap-x-2 text-xs text-stone-500">
+								if r.IsCurrent {
+									<span class="rounded bg-amber-100 px-1.5 py-0.5 font-medium text-amber-800">current</span>
+								}
+								@views.Author(r.Author, auth.UserFrom(ctx))
+								<span>· { r.CreatedAt }</span>
+							</div>
+							<p class="mt-1 font-medium">{ r.Title }</p>
+							if r.WhyNote != "" {
+								<p class="mt-1 text-sm text-stone-700"><span class="text-stone-500">Why:</span> { r.WhyNote }</p>
+							} else {
+								<p class="mt-1 text-sm text-stone-500">First version</p>
+							}
+							<details class="mt-2 text-sm">
+								<summary class="cursor-pointer text-stone-600 hover:underline">Full text</summary>
+								<h3 class="mt-2 font-medium">How it's done today</h3>
+								<div class="whitespace-pre-line">{ r.CurrentProcess }</div>
+								<h3 class="mt-2 font-medium">What goes wrong</h3>
+								<div class="whitespace-pre-line">{ r.Pain }</div>
+								<h3 class="mt-2 font-medium">Already tried</h3>
+								<div class="whitespace-pre-line">{ r.Tried }</div>
+							</details>
+							if v.CanWrite {
+								<div class="mt-2 flex gap-3 text-sm">
+									<a href={ templ.SafeURL("/p/" + v.ProblemID + "/revise?from=" + r.ID) } class="hover:underline">Revise from this version</a>
+									<form method="post" action={ templ.SafeURL("/p/" + v.ProblemID + "/fork") } class="inline">
+										<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+										<input type="hidden" name="revision_id" value={ r.ID }/>
+										<button type="submit" class="hover:underline">Fork from this version</button>
+									</form>
+								</div>
+							}
+						</div>
+					</div>
+				</div>
+			</li>
+		}
+	</ol>
+}

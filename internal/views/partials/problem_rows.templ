@@ -1,0 +1,58 @@
+package partials
+
+import (
+	"github.com/hi-naresh/unsolved/internal/auth"
+	"github.com/hi-naresh/unsolved/internal/views"
+	"strconv"
+)
+
+// ProblemList is a full list: the <ul> around the first page of rows.
+templ ProblemList(v ProblemRowsView) {
+	if len(v.Rows) == 0 && v.MoreURL == "" {
+		<p class="py-6 text-stone-500">{ v.Empty }</p>
+	} else {
+		<ul class="divide-y divide-stone-200 border-y border-stone-200" id="problem-list">
+			@ProblemRows(v)
+		</ul>
+	}
+}
+
+// ProblemRows is the htmx partial for a list page: just the <li> rows plus
+// the "more" row, which swaps itself for the next page.
+templ ProblemRows(v ProblemRowsView) {
+	for _, row := range v.Rows {
+		@ProblemRow(row)
+	}
+	if v.MoreURL != "" {
+		@Pager(v.MoreURL)
+	}
+}
+
+// ProblemRow is one problem in a list.
+templ ProblemRow(p ProblemRowView) {
+	<li class="flex gap-3 py-3" data-problem-id={ p.ID }>
+		<span class="w-12 shrink-0 pt-0.5 text-right text-sm tabular-nums text-stone-500" title="Votes on the current version">
+			{ strconv.Itoa(int(p.Votes)) } ▲
+		</span>
+		<div class="min-w-0">
+			<a href={ templ.SafeURL("/p/" + p.ID) } class="font-medium hover:underline">{ p.Title }</a>
+			<div class="mt-0.5 flex flex-wrap gap-x-2 text-xs text-stone-500">
+				if p.Pinned {
+					<span class="rounded bg-stone-200 px-1.5 text-stone-700">Pinned</span>
+				}
+				<a href={ templ.SafeURL("/problems?domain=" + p.DomainSlug) } class="hover:underline">{ p.DomainName }</a>
+				if p.State != "open" {
+					<span>· { ProblemStateLabel(p.State) }</span>
+				}
+				if p.SoftSolved {
+					<span>· soft-solved</span>
+				}
+				<span>
+					·
+					@views.Author(p.Author, auth.UserFrom(ctx))
+				</span>
+				<span>· { ProblemDate(p.CreatedAt) }</span>
+			</div>
+		</div>
+	</li>
+}
