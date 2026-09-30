@@ -35,14 +35,14 @@ func ReportLink(kind string, id string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<details class=\"report-link inline-block text-xs text-stone-500\"><summary class=\"cursor-pointer select-none hover:underline\">Report</summary><form method=\"post\" action=\"/report\" hx-post=\"/report\" hx-target=\"closest details\" hx-swap=\"outerHTML\" class=\"mt-2 w-72 space-y-2 rounded border border-stone-200 bg-white p-3 shadow-sm\"><input type=\"hidden\" name=\"csrf_token\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<details class=\"report-link inline-block text-xs\"><summary><svg class=\"size-3.5\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M4.5 17V3.5M4.5 4h9l-1.8 3.5L13.5 11h-9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg> Report</summary><form method=\"post\" action=\"/report\" hx-post=\"/report\" hx-target=\"closest details\" hx-swap=\"outerHTML\" class=\"report-pop\"><input type=\"hidden\" name=\"csrf_token\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.ResolveAttributeValue(auth.CSRFToken(ctx))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/partials/report_link.templ`, Line: 20, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/partials/report_link.templ`, Line: 23, Col: 69}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var2)
 		if templ_7745c5c3_Err != nil {
@@ -55,7 +55,7 @@ func ReportLink(kind string, id string) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.ResolveAttributeValue(kind)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/partials/report_link.templ`, Line: 21, Col: 55}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/partials/report_link.templ`, Line: 24, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 		if templ_7745c5c3_Err != nil {
@@ -68,13 +68,13 @@ func ReportLink(kind string, id string) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/partials/report_link.templ`, Line: 22, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/partials/report_link.templ`, Line: 25, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"> <label class=\"block text-stone-700\">What's wrong with this? <textarea name=\"reason\" rows=\"3\" minlength=\"5\" maxlength=\"500\" required class=\"field\"></textarea></label> <button type=\"submit\" class=\"btn-secondary\">Send report</button></form></details>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"> <label class=\"block text-sm font-medium text-stone-800\">What's wrong with this? <span class=\"mt-0.5 block text-xs font-normal text-stone-500\">Only admins see reports. Be specific.</span> <textarea name=\"reason\" rows=\"3\" minlength=\"5\" maxlength=\"500\" required class=\"field text-sm font-normal\"></textarea></label><div class=\"flex items-center justify-end gap-2\"><button type=\"submit\" class=\"btn text-xs\">Send report</button></div></form></details>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

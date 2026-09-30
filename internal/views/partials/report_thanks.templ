@@ -2,5 +2,8 @@ package partials
 
 // ReportThanks replaces ReportLink after a report is sent.
 templ ReportThanks() {
-	<span class="report-thanks text-xs text-stone-500">Thanks — an admin will look at this.</span>
+	<span class="report-thanks inline-flex items-center gap-1 rounded-md bg-emerald-500/12 px-1.5 py-0.5 text-xs text-emerald-700 dark:text-emerald-400" role="status">
+		<svg class="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 10.5 3 3 7-7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+		Thanks — an admin will look at this.
+	</span>
 }

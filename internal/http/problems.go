@@ -335,6 +335,7 @@ func (h *Handlers) problemEvolution(w http.ResponseWriter, r *http.Request) erro
 			Author:    contentAuthor(n.AuthorDisplay, n.AuthorHandle, n.AuthorDeleted, n.AuthorTier),
 			Vote:      voteView("/r/"+n.ID.String()+"/vote", n.ViewerVoted, n.VoteCount, u, invalid, n.ViewerIsAuthor, signIn),
 			CreatedAt: partials.ProblemDate(n.CreatedAt),
+			Created:   n.CreatedAt,
 		})
 	}
 	return h.render(w, r, http.StatusOK, pages.Evolution(v), pages.EvolutionContent(v))

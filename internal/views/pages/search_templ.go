@@ -47,20 +47,20 @@ func Search(v partials.SearchView) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h1 class=\"text-2xl font-semibold\">Search problems</h1><form method=\"get\" action=\"/search\" class=\"mt-4 mb-8 flex gap-2\" hx-get=\"/search\" hx-target=\"#search-results\" hx-swap=\"outerHTML\" hx-push-url=\"true\"><input type=\"search\" name=\"q\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"text-center\"><h1 class=\"text-2xl font-semibold tracking-tight sm:text-3xl\">Search problems</h1><p class=\"mx-auto mt-2 max-w-md text-[15px] text-stone-600\">Describe the process or the pain in your own words. We match meaning, not keywords.</p></section><form method=\"get\" action=\"/search\" role=\"search\" class=\"mx-auto mb-8 mt-6 max-w-2xl\" hx-get=\"/search\" hx-target=\"#search-results\" hx-swap=\"outerHTML\" hx-push-url=\"true\"><div class=\"relative flex items-center rounded-2xl border border-stone-300 bg-white p-1.5 transition focus-within:border-accent focus-within:ring-4 focus-within:ring-accent/15\" style=\"box-shadow: var(--u-shadow-lg)\"><svg class=\"pointer-events-none ml-2.5 size-5 shrink-0 text-stone-400\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><circle cx=\"9\" cy=\"9\" r=\"6\"></circle><path d=\"m14 14 4 4\" stroke-linecap=\"round\"></path></svg> <input type=\"search\" name=\"q\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.ResolveAttributeValue(v.Query)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/search.templ`, Line: 14, Col: 48}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/search.templ`, Line: 30, Col: 20}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" maxlength=\"500\" autofocus placeholder=\"Describe the process or the pain, in your own words\" class=\"flex-1 rounded border border-stone-300 px-3 py-2\"> <button type=\"submit\" class=\"rounded bg-stone-900 px-4 py-2 text-white hover:bg-stone-700\">Search</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" maxlength=\"500\" autofocus aria-label=\"Describe the problem\" placeholder=\"e.g. we re-type PDF orders into our ERP\" class=\"min-w-0 flex-1 bg-transparent px-3 py-2.5 text-base text-stone-900 placeholder:text-stone-400 focus:outline-none\"> <button type=\"submit\" class=\"btn shrink-0 rounded-xl px-4 py-2.5\">Search</button></div></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -119,7 +119,7 @@ func AdminMerges(rows []partials.MergeRow, next string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<h1 class=\"text-2xl font-semibold\">Merge suggestions</h1><p class=\"mt-2 text-sm text-stone-600\">Pairs of problems whose current versions read almost the same. Dismissed pairs never come back.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<a href=\"/admin\" class=\"inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-900\"><svg class=\"size-4\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"m12 5-5 5 5 5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg> Reports</a><p class=\"kicker mt-3\">Admin</p><h1 class=\"mt-1 text-2xl font-semibold tracking-tight sm:text-3xl\">Merge suggestions</h1><p class=\"mt-2 text-[15px] text-stone-600\">Pairs of problems whose current versions read almost the same. Dismissed pairs never come back.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
