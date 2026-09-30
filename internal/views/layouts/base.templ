@@ -1,0 +1,55 @@
+package layouts
+
+import "github.com/hi-naresh/unsolved/internal/auth"
+
+// Base is the full-page layout. Pages call it; htmx partial responses don't.
+// hx-headers on <body> makes every htmx request carry the CSRF token.
+templ Base(title string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ title } · Unsolved</title>
+			<link rel="stylesheet" href="/static/css/app.css"/>
+			<script src="/static/htmx.min.js" defer></script>
+		</head>
+		<body class="bg-stone-50 text-stone-900 antialiased" hx-headers={ `{"X-CSRF-Token": "` + auth.CSRFToken(ctx) + `"}` }>
+			@nav(auth.UserFrom(ctx))
+			<main class="mx-auto max-w-3xl px-4 py-8">
+				{ children... }
+			</main>
+			<footer class="mx-auto max-w-3xl px-4 py-8 text-sm text-stone-500 flex gap-4">
+				<a href="/about" class="hover:underline">About</a>
+				<a href="/privacy" class="hover:underline">Privacy</a>
+				<a href="/meta" class="hover:underline">Meta</a>
+			</footer>
+		</body>
+	</html>
+}
+
+templ nav(u *auth.User) {
+	<header class="border-b border-stone-200 bg-white">
+		<nav class="mx-auto flex max-w-3xl items-center gap-4 px-4 py-3 text-sm">
+			<a href="/" class="font-semibold tracking-tight text-base">Unsolved</a>
+			<a href="/problems" class="hover:underline">Problems</a>
+			<a href="/search" class="hover:underline">Search</a>
+			<a href="/members" class="hover:underline">Members</a>
+			<span class="flex-1"></span>
+			if u == nil {
+				<a href="/signin" class="rounded bg-stone-900 px-3 py-1.5 text-white hover:bg-stone-700">Sign in</a>
+			} else {
+				<a href="/new" class="rounded bg-stone-900 px-3 py-1.5 text-white hover:bg-stone-700">Post a problem</a>
+				<a href={ templ.SafeURL("/u/" + u.Handle) } class="hover:underline">{ "@" + u.Handle }</a>
+				<a href="/settings" class="hover:underline">Settings</a>
+				if u.IsAdmin {
+					<a href="/admin" class="hover:underline">Admin</a>
+				}
+				<form method="post" action="/auth/signout" class="inline">
+					<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+					<button type="submit" class="hover:underline">Sign out</button>
+				</form>
+			}
+		</nav>
+	</header>
+}

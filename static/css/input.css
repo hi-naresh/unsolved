@@ -1,0 +1,9 @@
+@import "tailwindcss";
+@source "../../internal/views";
+
+@layer components {
+  .field { @apply mt-1 block w-full rounded border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none; }
+  .btn { @apply inline-flex items-center rounded bg-stone-900 px-3 py-1.5 text-sm text-white hover:bg-stone-700; }
+  .btn-secondary { @apply inline-flex items-center rounded border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-100; }
+  .error { @apply mt-1 text-sm text-red-700; }
+}

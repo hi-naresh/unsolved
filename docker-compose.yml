@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: unsolved
+      POSTGRES_PASSWORD: unsolved
+      POSTGRES_DB: unsolved
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unsolved"]
+      interval: 2s
+      retries: 20
+volumes:
+  pgdata:
