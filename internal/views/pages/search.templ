@@ -1,0 +1,37 @@
+package pages
+
+import (
+	"github.com/hi-naresh/unsolved/internal/views/layouts"
+	"github.com/hi-naresh/unsolved/internal/views/partials"
+)
+
+// Search is GET /search: semantic search, or trending when q is empty.
+templ Search(v partials.SearchView) {
+	@layouts.Base(searchTitle(v.Query)) {
+		<h1 class="text-2xl font-semibold">Search problems</h1>
+		<form method="get" action="/search" class="mt-4 mb-8 flex gap-2"
+			hx-get="/search" hx-target="#search-results" hx-swap="outerHTML" hx-push-url="true">
+			<input type="search" name="q" value={ v.Query } maxlength="500" autofocus
+				placeholder="Describe the process or the pain, in your own words"
+				class="flex-1 rounded border border-stone-300 px-3 py-2"/>
+			<button type="submit" class="rounded bg-stone-900 px-4 py-2 text-white hover:bg-stone-700">Search</button>
+		</form>
+		@partials.DiscoverySearchResults(v)
+	}
+}
+
+func searchTitle(q string) string {
+	if q == "" {
+		return "Search"
+	}
+	return q + " – Search"
+}
+
+// AdminMerges is GET /admin/merges: near-duplicate problems found nightly.
+templ AdminMerges(rows []partials.MergeRow, next string) {
+	@layouts.Base("Merge suggestions") {
+		<h1 class="text-2xl font-semibold">Merge suggestions</h1>
+		<p class="mt-2 text-sm text-stone-600">Pairs of problems whose current versions read almost the same. Dismissed pairs never come back.</p>
+		@partials.DiscoveryMerges(rows, next)
+	}
+}
