@@ -13,7 +13,8 @@ import (
 // mountUsers: /welcome (new members), public profiles and the directory.
 func (h *Handlers) mountUsers(r chi.Router) {
 	r.With(auth.RequireUser).Get("/welcome", h.wrap(h.welcomePage))
-	r.With(auth.RequireUser).Post("/welcome", h.wrap(h.welcomeSubmit))
+	// Changing the handle is a profile edit: suspended accounts can't.
+	r.With(auth.RequireWriter).Post("/welcome", h.wrap(h.welcomeSubmit))
 	r.Get("/u/{handle}", h.wrap(h.profilePage))
 	r.Get("/members", h.wrap(h.membersPage))
 }
