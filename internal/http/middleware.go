@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -48,7 +49,7 @@ func (h *Handlers) logRequests(next http.Handler) http.Handler {
 		start := time.Now()
 		next.ServeHTTP(ww, r)
 		h.Log.InfoContext(r.Context(), "request",
-			"method", r.Method, "path", r.URL.Path, "status", ww.Status(),
+			"method", r.Method, "path", logPath(r.URL.Path), "status", ww.Status(),
 			"dur_ms", time.Since(start).Milliseconds(), "req_id", middleware.GetReqID(r.Context()),
 			"hx", isHX(r))
 	})
@@ -91,4 +92,12 @@ func metricsMiddleware(next http.Handler) http.Handler {
 		}
 		httpDuration.WithLabelValues(r.Method, route, strconv.Itoa(ww.Status())).Observe(time.Since(start).Seconds())
 	})
+}
+
+// logPath keeps bearer-style tokens (the one-tap Solved links) out of logs.
+func logPath(p string) string {
+	if strings.HasPrefix(p, "/solved/") {
+		return "/solved/{token}"
+	}
+	return p
 }
