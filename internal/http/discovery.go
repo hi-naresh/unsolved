@@ -91,11 +91,12 @@ func problemLinks(items []service.DiscoveryItem) []partials.ProblemLink {
 	out := make([]partials.ProblemLink, 0, len(items))
 	for _, it := range items {
 		out = append(out, partials.ProblemLink{
-			ProblemID: it.ProblemID.String(),
-			Title:     it.Title,
-			Domain:    it.DomainName,
-			Solved:    it.State == store.ProblemStateSolved,
-			Author:    views.NewAuthorRef(string(it.AuthorDisplay), it.AuthorHandle, it.AuthorDeleted, it.AuthorTier),
+			ProblemID:  it.ProblemID.String(),
+			Title:      it.Title,
+			Domain:     it.DomainName,
+			Solved:     it.State == store.ProblemStateSolved,
+			Similarity: it.Similarity,
+			Author:     views.NewAuthorRef(string(it.AuthorDisplay), it.AuthorHandle, it.AuthorDeleted, it.AuthorTier),
 		})
 	}
 	return out
