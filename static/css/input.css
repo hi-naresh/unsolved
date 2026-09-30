@@ -90,7 +90,7 @@
   .btn { @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-accent px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:brightness-110 active:scale-[0.98] disabled:opacity-50; }
   .btn-secondary { @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-800 transition hover:border-stone-400 hover:bg-stone-50 active:scale-[0.98]; }
   .btn-ghost { @apply inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-900; }
-  .error { @apply mt-1 text-sm text-red-600; }
+  .error { @apply mt-1 text-sm text-red-600 dark:text-red-400; }
 
   /* chips */
   .chip { @apply inline-flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 text-[11px] font-medium text-stone-600; }
