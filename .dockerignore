@@ -1,0 +1,6 @@
+ml/
+.git
+bin/
+tmp/
+.env
+.claude/
