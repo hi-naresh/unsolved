@@ -248,6 +248,7 @@ const listSolutionRevisionCandidates = `-- name: ListSolutionRevisionCandidates 
 SELECT id, score, vote_count FROM solution_revisions
 WHERE solution_id = $1
 ORDER BY score DESC, id
+FOR SHARE
 `
 
 type ListSolutionRevisionCandidatesRow struct {

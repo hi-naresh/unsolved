@@ -165,7 +165,11 @@ func TestCreateProblem(t *testing.T) {
 	// One transaction: a failure after the problem insert leaves nothing behind.
 	var before, after int
 	_ = e.st.Pool.QueryRow(ctx, `SELECT count(*) FROM problems WHERE author_id = $1`, author).Scan(&before)
-	if _, err := e.svc.CreateProblem(ctx, author, func() service.NewProblem { p := sampleProblem("Atomic create should roll back"); p.DomainID = 999; return p }()); err == nil {
+	if _, err := e.svc.CreateProblem(ctx, author, func() service.NewProblem {
+		p := sampleProblem("Atomic create should roll back")
+		p.DomainID = 999
+		return p
+	}()); err == nil {
 		t.Fatal("want error")
 	}
 	_ = e.st.Pool.QueryRow(ctx, `SELECT count(*) FROM problems WHERE author_id = $1`, author).Scan(&after)

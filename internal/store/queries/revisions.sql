@@ -50,9 +50,12 @@ ORDER BY r.created_at, r.id;
 SELECT current_revision_id FROM problems WHERE id = $1 FOR UPDATE;
 
 -- name: ListProblemRevisionCandidates :many
+-- FOR SHARE: waits for any vote transaction that has already updated one of
+-- these rows, so the pick never decides on scores a committed-later vote changed.
 SELECT id, score, vote_count FROM problem_revisions
 WHERE problem_id = $1
-ORDER BY score DESC, id;
+ORDER BY score DESC, id
+FOR SHARE;
 
 -- name: SetProblemCurrentRevision :execrows
 -- One statement: current revision, the problem's score (= the leader's) and updated_at.

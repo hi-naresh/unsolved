@@ -67,7 +67,7 @@ func (s *Service) CreateRevision(ctx context.Context, problemID, authorID uuid.U
 		}); err != nil {
 			return err
 		}
-		return s.enqueueContentJob(ctx, tx, jobs.EmbedRevisionArgs{RevisionID: rid})
+		return s.enqueueContentJob(ctx, tx, jobs.EmbedRevisionArgs{RevisionID: rid}, nil)
 	})
 	if err != nil {
 		return uuid.Nil, err

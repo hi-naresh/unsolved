@@ -9,6 +9,8 @@ import (
 	"github.com/hi-naresh/unsolved/internal/jobs"
 	"github.com/hi-naresh/unsolved/internal/store"
 	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/rivertype"
 )
 
 // VoteResult is the state after a toggle: whether the viewer now has a vote
@@ -60,7 +62,7 @@ func (s *Service) ToggleProblemVote(ctx context.Context, revisionID, voterID uui
 		}); err != nil {
 			return err
 		}
-		return s.enqueueContentJob(ctx, tx, jobs.PickCurrentRevisionArgs{ProblemID: t.ProblemID})
+		return s.enqueuePick(ctx, tx, jobs.PickCurrentRevisionArgs{ProblemID: t.ProblemID})
 	})
 	return res, err
 }
@@ -102,9 +104,62 @@ func (s *Service) ToggleSolutionVote(ctx context.Context, revisionID, voterID uu
 		}); err != nil {
 			return err
 		}
-		return s.enqueueContentJob(ctx, tx, jobs.PickCurrentSolutionRevisionArgs{SolutionID: t.SolutionID})
+		return s.enqueuePick(ctx, tx, jobs.PickCurrentSolutionRevisionArgs{SolutionID: t.SolutionID})
 	})
 	return res, err
+}
+
+// pickUniquePeriod is the build doc's "unique per problem for 5 s".
+const pickUniquePeriod = 5 * time.Second
+
+// enqueuePick enqueues PickCurrentRevision / PickCurrentSolutionRevision in
+// the vote's transaction, unique per problem (or solution) over 5 s.
+//
+// Correctness does not depend on luck with that uniqueness:
+//   - The job reads candidates FOR SHARE, so a job that has not read yet
+//     either waits for this (already-updated, uncommitted) vote or sees it.
+//     Deduplicating against a job that has not started is therefore safe.
+//   - Only unfinished jobs count as duplicates. River's default also counts
+//     "completed", which would drop every vote cast in the rest of the 5 s
+//     window once the first job had run.
+//   - A duplicate that is already "running" may have read the scores before
+//     this vote (River also marks jobs completed a little after their work
+//     returns). Then a follow-up job is enqueued for the start of the next
+//     5 s window, under its own unique key: a job with that key cannot have
+//     started yet, so it will see this vote, and a burst of such votes still
+//     collapses into one follow-up.
+func (s *Service) enqueuePick(ctx context.Context, tx pgx.Tx, args river.JobArgs) error {
+	if s.Jobs == nil {
+		return s.enqueueContentJob(ctx, tx, args, nil)
+	}
+	res, err := s.Jobs.InsertTx(ctx, tx, args, pickJobOpts(nil))
+	if err != nil {
+		return err
+	}
+	if res.UniqueSkippedAsDuplicate && res.Job != nil && res.Job.State == rivertype.JobStateRunning {
+		at := time.Now().Truncate(pickUniquePeriod).Add(pickUniquePeriod)
+		_, err = s.Jobs.InsertTx(ctx, tx, args, pickJobOpts(&at))
+	}
+	return err
+}
+
+// pickJobOpts: at == nil is the immediate job; otherwise a follow-up
+// scheduled at at. ByQueue only serves to give follow-ups a unique key of
+// their own (there is one queue).
+func pickJobOpts(at *time.Time) *river.InsertOpts {
+	o := &river.InsertOpts{UniqueOpts: river.UniqueOpts{
+		ByArgs:   true,
+		ByPeriod: pickUniquePeriod,
+		ByQueue:  at != nil,
+		ByState: []rivertype.JobState{
+			rivertype.JobStateAvailable, rivertype.JobStatePending, rivertype.JobStateRunning,
+			rivertype.JobStateRetryable, rivertype.JobStateScheduled,
+		},
+	}}
+	if at != nil {
+		o.ScheduledAt = *at
+	}
+	return o
 }
 
 // toggleVoteRow runs INSERT … ON CONFLICT DO NOTHING RETURNING; if nothing

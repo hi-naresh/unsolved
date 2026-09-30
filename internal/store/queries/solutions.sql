@@ -59,7 +59,8 @@ SELECT current_revision_id, problem_id FROM solutions WHERE id = $1 FOR UPDATE;
 -- name: ListSolutionRevisionCandidates :many
 SELECT id, score, vote_count FROM solution_revisions
 WHERE solution_id = $1
-ORDER BY score DESC, id;
+ORDER BY score DESC, id
+FOR SHARE;
 
 -- name: SetSolutionCurrentRevision :execrows
 -- One statement: current revision and the solution's score (= the leader's).

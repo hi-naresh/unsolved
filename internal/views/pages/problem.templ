@@ -1,0 +1,218 @@
+package pages
+
+import (
+	"github.com/hi-naresh/unsolved/internal/auth"
+	"github.com/hi-naresh/unsolved/internal/views"
+	"github.com/hi-naresh/unsolved/internal/views/layouts"
+	"github.com/hi-naresh/unsolved/internal/views/partials"
+)
+
+// ProblemStateEventView is one line of the state history. Actor is a role
+// ("the poster", "a moderator", "the system"), never a handle: the poster
+// may be anonymous.
+type ProblemStateEventView struct {
+	From   string
+	To     string
+	Actor  string
+	Reason string
+	At     string
+}
+
+// ProblemPageView is /p/{id}.
+type ProblemPageView struct {
+	ID             string
+	RevisionID     string
+	Title          string
+	DomainName     string
+	DomainSlug     string
+	CurrentProcess string
+	Pain           string
+	Tried          string
+	State          string
+	SoftSolved     bool
+	OnMetaBoard    bool
+	IsRevised      bool
+	Poster         views.AuthorRef
+	RevisionAuthor views.AuthorRef
+	PostedAt       string
+	Vote           partials.VoteButtonView
+	Interest       partials.InterestView
+	ForkedFrom     *partials.ProblemLinkView
+	Forks          []partials.ProblemLinkView
+	Solutions      []partials.SolutionView
+	History        []ProblemStateEventView
+	SignedIn       bool
+	CanWrite       bool // signed-in writer and the problem is not invalid
+	ViewerIsPoster bool
+	SolutionForm   partials.SolutionFormView
+}
+
+templ Problem(v ProblemPageView) {
+	@layouts.Base(v.Title) {
+		@ProblemContent(v)
+	}
+}
+
+// ProblemContent is the page body (the htmx partial for /p/{id}).
+templ ProblemContent(v ProblemPageView) {
+	<article id="problem" data-problem-id={ v.ID }>
+		if v.State == "invalid" {
+			<div class="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+				This problem was marked invalid. It stays visible for the record but can no longer be changed, voted on or answered.
+			</div>
+		}
+		<div class="flex flex-wrap items-center gap-2 text-xs text-stone-500">
+			<a href={ templ.SafeURL("/problems?domain=" + v.DomainSlug) } class="hover:underline">{ v.DomainName }</a>
+			<span class="rounded bg-stone-100 px-1.5 py-0.5 font-medium text-stone-700">{ partials.ProblemStateLabel(v.State) }</span>
+			if v.SoftSolved {
+				<span class="rounded bg-emerald-100 px-1.5 py-0.5 font-medium text-emerald-800" title="The top solution has enough votes">soft-solved</span>
+			}
+			if v.OnMetaBoard {
+				<a href="/meta" class="rounded bg-stone-100 px-1.5 py-0.5 hover:underline">meta</a>
+			}
+		</div>
+		<div class="mt-2 flex items-start gap-3">
+			@partials.VoteButton(v.Vote)
+			<h1 class="text-2xl font-semibold leading-tight">{ v.Title }</h1>
+		</div>
+		<p class="mt-2 flex flex-wrap items-center gap-x-1 text-sm text-stone-500">
+			Posted by
+			@views.Author(v.Poster, auth.UserFrom(ctx))
+			<span>· { v.PostedAt }</span>
+			if v.IsRevised {
+				<span>· current version by</span>
+				@views.Author(v.RevisionAuthor, auth.UserFrom(ctx))
+			}
+		</p>
+		if v.ForkedFrom != nil {
+			<p class="mt-1 text-sm text-stone-500">
+				Forked from <a href={ templ.SafeURL("/p/" + v.ForkedFrom.ID) } class="underline">{ v.ForkedFrom.Title }</a>
+			</p>
+		}
+		<section class="mt-6 space-y-4 text-stone-800">
+			<div>
+				<h2 class="text-sm font-semibold uppercase tracking-wide text-stone-500">How it's done today</h2>
+				<div class="mt-1 whitespace-pre-line">{ v.CurrentProcess }</div>
+			</div>
+			<div>
+				<h2 class="text-sm font-semibold uppercase tracking-wide text-stone-500">What goes wrong</h2>
+				<div class="mt-1 whitespace-pre-line">{ v.Pain }</div>
+			</div>
+			<div>
+				<h2 class="text-sm font-semibold uppercase tracking-wide text-stone-500">Already tried</h2>
+				<div class="mt-1 whitespace-pre-line">
+					if v.Tried == "" {
+						<span class="text-stone-500">Nothing yet.</span>
+					} else {
+						{ v.Tried }
+					}
+				</div>
+			</div>
+		</section>
+		<nav class="mt-6 flex flex-wrap items-center gap-4 text-sm">
+			<a href={ templ.SafeURL("/p/" + v.ID + "/evolution") } class="underline">How this evolved</a>
+			if v.CanWrite {
+				<a href={ templ.SafeURL("/p/" + v.ID + "/revise") } class="underline">Revise</a>
+				<form method="post" action={ templ.SafeURL("/p/" + v.ID + "/fork") } class="inline">
+					<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+					<input type="hidden" name="revision_id" value={ v.RevisionID }/>
+					<button type="submit" class="underline">Fork</button>
+				</form>
+			}
+			<span class="flex-1"></span>
+			@partials.ProblemInterest(v.Interest)
+		</nav>
+		if len(v.Forks) > 0 {
+			<div class="mt-3 text-sm text-stone-600">
+				Forks:
+				for i, f := range v.Forks {
+					if i > 0 {
+						<span>·</span>
+					}
+					<a href={ templ.SafeURL("/p/" + f.ID) } class="underline">{ f.Title }</a>
+				}
+			</div>
+		}
+		@problemStatePanel(v)
+	</article>
+	<section class="mt-10" id="solutions">
+		<h2 class="text-xl font-semibold">Solutions</h2>
+		if len(v.Solutions) == 0 {
+			<p class="mt-2 text-stone-500">No solutions yet.</p>
+		}
+		<div class="mt-4 space-y-4">
+			for _, s := range v.Solutions {
+				@partials.SolutionCard(s)
+			}
+		</div>
+		if v.CanWrite {
+			<div class="mt-8">
+				<h3 class="text-lg font-semibold">Post a solution</h3>
+				<div class="mt-3">
+					@partials.SolutionForm(v.SolutionForm)
+				</div>
+			</div>
+		} else if !v.SignedIn && v.State != "invalid" {
+			<p class="mt-6 text-sm"><a href={ templ.SafeURL("/signin?next=/p/" + v.ID) } class="underline">Sign in</a> to post a solution.</p>
+		}
+	</section>
+}
+
+templ problemStatePanel(v ProblemPageView) {
+	<section class="mt-8 rounded border border-stone-200 bg-white p-4 text-sm" id="state">
+		<h2 class="font-semibold">Status: { partials.ProblemStateLabel(v.State) }</h2>
+		if len(v.History) > 0 {
+			<ol class="mt-2 space-y-1 text-stone-600">
+				for _, e := range v.History {
+					<li>
+						{ e.At }: { partials.ProblemStateLabel(e.From) } → { partials.ProblemStateLabel(e.To) } by { e.Actor }
+						if e.Reason != "" {
+							<span>— { e.Reason }</span>
+						}
+					</li>
+				}
+			</ol>
+		}
+		if v.ViewerIsPoster && v.CanWrite {
+			<form method="post" action={ templ.SafeURL("/p/" + v.ID + "/state") } class="mt-3 flex flex-wrap items-end gap-2">
+				<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+				if v.State == "open" {
+					<input type="hidden" name="to" value="solved"/>
+				} else {
+					<input type="hidden" name="to" value="open"/>
+				}
+				<label class="flex-1">
+					<span class="block text-stone-600">Note (optional)</span>
+					<input type="text" name="reason" maxlength="500" class="field"/>
+				</label>
+				if v.State == "open" {
+					<button type="submit" class="btn">Mark solved</button>
+				} else {
+					<button type="submit" class="btn-secondary">Reopen</button>
+				}
+			</form>
+		}
+	</section>
+}
+
+// SolutionFormPage re-renders the post-a-solution form alone with errors.
+templ SolutionFormPage(problemTitle string, f partials.SolutionFormView) {
+	@layouts.Base("Post a solution") {
+		<p class="text-sm text-stone-500"><a href={ templ.SafeURL("/p/" + f.ProblemID) } class="hover:underline">← { problemTitle }</a></p>
+		<h1 class="mt-2 text-2xl font-semibold">Post a solution</h1>
+		<div class="mt-4">
+			@partials.SolutionForm(f)
+		</div>
+	}
+}
+
+// SolutionRevisePage re-renders the solution-revision form alone with errors.
+templ SolutionRevisePage(problemID string, f partials.SolutionReviseFormView) {
+	@layouts.Base("Suggest a revision") {
+		if problemID != "" {
+			<p class="text-sm text-stone-500"><a href={ templ.SafeURL("/p/" + problemID) } class="hover:underline">← Back to the problem</a></p>
+		}
+		<h1 class="mt-2 text-2xl font-semibold">Suggest a revision</h1>
+		@partials.SolutionReviseForm(f)
+	}
+}

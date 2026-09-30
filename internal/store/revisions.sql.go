@@ -163,6 +163,7 @@ const listProblemRevisionCandidates = `-- name: ListProblemRevisionCandidates :m
 SELECT id, score, vote_count FROM problem_revisions
 WHERE problem_id = $1
 ORDER BY score DESC, id
+FOR SHARE
 `
 
 type ListProblemRevisionCandidatesRow struct {
@@ -171,6 +172,8 @@ type ListProblemRevisionCandidatesRow struct {
 	VoteCount int32
 }
 
+// FOR SHARE: waits for any vote transaction that has already updated one of
+// these rows, so the pick never decides on scores a committed-later vote changed.
 func (q *Queries) ListProblemRevisionCandidates(ctx context.Context, problemID uuid.UUID) ([]ListProblemRevisionCandidatesRow, error) {
 	rows, err := q.db.Query(ctx, listProblemRevisionCandidates, problemID)
 	if err != nil {

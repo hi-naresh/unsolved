@@ -97,7 +97,7 @@ func (s *Service) insertProblem(ctx context.Context, authorID uuid.UUID, domainI
 		}); err != nil {
 			return err
 		}
-		return s.enqueueContentJob(ctx, tx, jobs.EmbedRevisionArgs{RevisionID: rid})
+		return s.enqueueContentJob(ctx, tx, jobs.EmbedRevisionArgs{RevisionID: rid}, nil)
 	})
 	if isFKViolation(err, "problems_domain_id_fkey") {
 		return uuid.Nil, Invalid("domain_id", "Choose a domain.")
@@ -430,11 +430,11 @@ func contentDisplay(d store.DisplayMode) (store.DisplayMode, error) {
 }
 
 // enqueueContentJob inserts a job in the caller's transaction.
-func (s *Service) enqueueContentJob(ctx context.Context, tx pgx.Tx, args river.JobArgs) error {
+func (s *Service) enqueueContentJob(ctx context.Context, tx pgx.Tx, args river.JobArgs, opts *river.InsertOpts) error {
 	if s.Jobs == nil {
 		return errors.New("service: no job client configured")
 	}
-	_, err := s.Jobs.InsertTx(ctx, tx, args, nil)
+	_, err := s.Jobs.InsertTx(ctx, tx, args, opts)
 	return err
 }
 

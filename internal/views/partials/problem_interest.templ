@@ -1,0 +1,41 @@
+package partials
+
+import (
+	"github.com/hi-naresh/unsolved/internal/auth"
+	"strconv"
+)
+
+// ProblemInterest is the founder-interest toggle and count. The htmx
+// response replaces the whole form.
+templ ProblemInterest(v InterestView) {
+	<form method="post" action={ templ.SafeURL("/p/" + v.ProblemID + "/interest") } class="interest inline-flex items-center gap-2 text-sm">
+		<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+		<span class="interest-count tabular-nums">{ interestLabel(v.Count) }</span>
+		switch v.Mode {
+			case VoteLive:
+				<button
+					type="submit"
+					hx-post={ "/p/" + v.ProblemID + "/interest" }
+					hx-target="closest form"
+					hx-swap="outerHTML"
+					aria-pressed={ strconv.FormatBool(v.Interested) }
+					class="btn-secondary"
+				>
+					if v.Interested {
+						I'm no longer interested
+					} else {
+						I'd build for this
+					}
+				</button>
+			case VoteSignIn:
+				<a href={ templ.SafeURL(v.SignInURL) } class="btn-secondary">I'd build for this</a>
+		}
+	</form>
+}
+
+func interestLabel(n int64) string {
+	if n == 1 {
+		return "1 founder interested"
+	}
+	return strconv.FormatInt(n, 10) + " founders interested"
+}

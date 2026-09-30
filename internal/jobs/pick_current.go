@@ -62,8 +62,63 @@ func nowFn(d Deps) func() time.Time {
 // applies ranking.PickLeader (tie → incumbent; a challenger needs
 // RANK_MIN_VOTES_TO_TAKE_OVER votes) and sets current_revision_id and
 // problems.score in one statement.
+//
+// A vote that commits while this job is running is deduplicated against it
+// (River's unique states include "running"), so after committing the job
+// re-reads the candidates and goes again if they moved underneath it.
 func PickCurrentRevision(ctx context.Context, d Deps, problemID uuid.UUID) error {
-	return d.Store.InTx(ctx, func(q *store.Queries, _ pgx.Tx) error {
+	for range maxPickPasses {
+		used, err := pickProblemOnce(ctx, d, problemID)
+		if err != nil || used == nil {
+			return err
+		}
+		rows, err := d.Store.ListProblemRevisionCandidates(ctx, problemID)
+		if err != nil {
+			return err
+		}
+		if sameCandidates(used, problemCandidates(rows)) {
+			return nil
+		}
+	}
+	return nil
+}
+
+// maxPickPasses bounds the re-check loop; a later vote enqueues a new job anyway.
+const maxPickPasses = 3
+
+func problemCandidates(rows []store.ListProblemRevisionCandidatesRow) []ranking.Candidate {
+	cands := make([]ranking.Candidate, len(rows))
+	for i, r := range rows {
+		cands[i] = ranking.Candidate{ID: r.ID, Score: r.Score, VoteCount: r.VoteCount}
+	}
+	return cands
+}
+
+func solutionCandidates(rows []store.ListSolutionRevisionCandidatesRow) []ranking.Candidate {
+	cands := make([]ranking.Candidate, len(rows))
+	for i, r := range rows {
+		cands[i] = ranking.Candidate{ID: r.ID, Score: r.Score, VoteCount: r.VoteCount}
+	}
+	return cands
+}
+
+func sameCandidates(a, b []ranking.Candidate) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// pickProblemOnce is one pass; it returns the candidates it decided on (nil
+// if the problem does not exist).
+func pickProblemOnce(ctx context.Context, d Deps, problemID uuid.UUID) ([]ranking.Candidate, error) {
+	var used []ranking.Candidate
+	err := d.Store.InTx(ctx, func(q *store.Queries, _ pgx.Tx) error {
 		inc, err := q.LockProblemForPick(ctx, problemID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil
@@ -75,10 +130,8 @@ func PickCurrentRevision(ctx context.Context, d Deps, problemID uuid.UUID) error
 		if err != nil {
 			return err
 		}
-		cands := make([]ranking.Candidate, len(rows))
-		for i, r := range rows {
-			cands[i] = ranking.Candidate{ID: r.ID, Score: r.Score, VoteCount: r.VoteCount}
-		}
+		cands := problemCandidates(rows)
+		used = cands
 		incumbent := deref(inc)
 		leader := ranking.PickLeader(cands, incumbent, d.Cfg.RankMinVotesToTakeOver)
 		if leader == uuid.Nil {
@@ -94,6 +147,7 @@ func PickCurrentRevision(ctx context.Context, d Deps, problemID uuid.UUID) error
 		}
 		return nil
 	})
+	return used, err
 }
 
 // PickCurrentSolutionRevision is PickCurrentRevision for a solution (sets
@@ -101,9 +155,27 @@ func PickCurrentRevision(ctx context.Context, d Deps, problemID uuid.UUID) error
 // problem's soft_solved = top solution's current revision vote_count ≥
 // SOFT_SOLVED_THRESHOLD. When soft_solved first flips to true it enqueues
 // SolvedPrompt through ins in the same transaction (ins may be nil only in
-// tests that don't care).
+// tests that don't care). It re-checks like PickCurrentRevision.
 func PickCurrentSolutionRevision(ctx context.Context, d Deps, ins TxInserter, solutionID uuid.UUID) error {
-	return d.Store.InTx(ctx, func(q *store.Queries, tx pgx.Tx) error {
+	for range maxPickPasses {
+		used, err := pickSolutionOnce(ctx, d, ins, solutionID)
+		if err != nil || used == nil {
+			return err
+		}
+		rows, err := d.Store.ListSolutionRevisionCandidates(ctx, solutionID)
+		if err != nil {
+			return err
+		}
+		if sameCandidates(used, solutionCandidates(rows)) {
+			return nil
+		}
+	}
+	return nil
+}
+
+func pickSolutionOnce(ctx context.Context, d Deps, ins TxInserter, solutionID uuid.UUID) ([]ranking.Candidate, error) {
+	var used []ranking.Candidate
+	err := d.Store.InTx(ctx, func(q *store.Queries, tx pgx.Tx) error {
 		sol, err := q.LockSolutionForPick(ctx, solutionID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil
@@ -115,10 +187,8 @@ func PickCurrentSolutionRevision(ctx context.Context, d Deps, ins TxInserter, so
 		if err != nil {
 			return err
 		}
-		cands := make([]ranking.Candidate, len(rows))
-		for i, r := range rows {
-			cands[i] = ranking.Candidate{ID: r.ID, Score: r.Score, VoteCount: r.VoteCount}
-		}
+		cands := solutionCandidates(rows)
+		used = cands
 		leader := ranking.PickLeader(cands, deref(sol.CurrentRevisionID), d.Cfg.RankMinVotesToTakeOver)
 		if leader != uuid.Nil {
 			if _, err := q.SetSolutionCurrentRevision(ctx, store.SetSolutionCurrentRevisionParams{
@@ -129,6 +199,7 @@ func PickCurrentSolutionRevision(ctx context.Context, d Deps, ins TxInserter, so
 		}
 		return updateSoftSolved(ctx, d, q, tx, ins, sol.ProblemID)
 	})
+	return used, err
 }
 
 func updateSoftSolved(ctx context.Context, d Deps, q *store.Queries, tx pgx.Tx, ins TxInserter, problemID uuid.UUID) error {
