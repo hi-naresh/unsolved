@@ -89,27 +89,8 @@ func (q *Queries) ListProblemStateHistory(ctx context.Context, problemID uuid.UU
 	return items, nil
 }
 
-const lockProblemState = `-- name: LockProblemState :one
-
-SELECT id, author_id, state FROM problems WHERE id = $1 FOR UPDATE
-`
-
-type LockProblemStateRow struct {
-	ID       uuid.UUID
-	AuthorID uuid.UUID
-	State    ProblemState
-}
-
-// Problem state changes by the poster. Every change appends a
-// problem_state_events row in the same transaction.
-func (q *Queries) LockProblemState(ctx context.Context, id uuid.UUID) (LockProblemStateRow, error) {
-	row := q.db.QueryRow(ctx, lockProblemState, id)
-	var i LockProblemStateRow
-	err := row.Scan(&i.ID, &i.AuthorID, &i.State)
-	return i, err
-}
-
 const writeProblemState = `-- name: WriteProblemState :exec
+
 UPDATE problems SET state = $1, updated_at = $2 WHERE id = $3
 `
 
@@ -119,6 +100,8 @@ type WriteProblemStateParams struct {
 	ID    uuid.UUID
 }
 
+// Problem state changes by the poster. Every change appends a
+// problem_state_events row in the same transaction.
 func (q *Queries) WriteProblemState(ctx context.Context, arg WriteProblemStateParams) error {
 	_, err := q.db.Exec(ctx, writeProblemState, arg.State, arg.Now, arg.ID)
 	return err

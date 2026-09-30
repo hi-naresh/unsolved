@@ -12,17 +12,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const adminGetProblemStateForUpdate = `-- name: AdminGetProblemStateForUpdate :one
-SELECT state FROM problems WHERE id = $1 FOR UPDATE
-`
-
-func (q *Queries) AdminGetProblemStateForUpdate(ctx context.Context, id uuid.UUID) (ProblemState, error) {
-	row := q.db.QueryRow(ctx, adminGetProblemStateForUpdate, id)
-	var state ProblemState
-	err := row.Scan(&state)
-	return state, err
-}
-
 const adminInsertStateEvent = `-- name: AdminInsertStateEvent :exec
 INSERT INTO problem_state_events (id, problem_id, from_state, to_state, actor_id, reason)
 VALUES ($1, $2, $3, $4, $5, $6)

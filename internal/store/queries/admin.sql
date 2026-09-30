@@ -42,9 +42,6 @@ LIMIT sqlc.arg(lim);
 -- name: AdminResolveReport :execrows
 UPDATE reports SET resolved_at = now() WHERE id = $1 AND resolved_at IS NULL;
 
--- name: AdminGetProblemStateForUpdate :one
-SELECT state FROM problems WHERE id = $1 FOR UPDATE;
-
 -- name: AdminSetProblemState :exec
 UPDATE problems SET state = $2, updated_at = now() WHERE id = $1;
 

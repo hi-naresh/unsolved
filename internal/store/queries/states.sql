@@ -1,9 +1,6 @@
 -- Problem state changes by the poster. Every change appends a
 -- problem_state_events row in the same transaction.
 
--- name: LockProblemState :one
-SELECT id, author_id, state FROM problems WHERE id = $1 FOR UPDATE;
-
 -- name: WriteProblemState :exec
 UPDATE problems SET state = sqlc.arg(state), updated_at = sqlc.arg(now) WHERE id = sqlc.arg(id);
 
