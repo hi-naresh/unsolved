@@ -151,6 +151,36 @@ copy selected rows from the branch when only some data was damaged.
 4. Alert rule: "A new issue is created" and "An issue changes from resolved to
    unresolved" → email NJ.
 
+## Postmark (phase 3 email) **[NJ — manual]**
+
+The only email the app sends is the `SolvedPrompt`: when a problem's top
+solution first reaches `SOFT_SOLVED_THRESHOLD` votes, the poster (if they
+added an email in `/settings`) gets one message with worked / partly / didn't
+work links. The links open a confirm page at `/solved/{token}` (signed, valid
+14 days); nothing is recorded until the poster presses the button.
+
+1. Create a Postmark server (e.g. `unsolved-production`) and use its default
+   **transactional** message stream (`outbound`).
+2. Sender: the app sends from `no-reply@<host of BASE_URL>` (e.g. `BASE_URL=https://unsolved.work`
+   → `no-reply@unsolved.work`). In Postmark → Sender Signatures, add and
+   verify that **domain** (DKIM + Return-Path DNS records in Cloudflare, DNS
+   only / grey cloud). A single-address sender signature for exactly that
+   address also works. If `BASE_URL` changes host, verify the new domain first.
+3. `fly secrets set POSTMARK_TOKEN=<server API token>` (Server → API Tokens,
+   not the account token).
+4. Without `POSTMARK_TOKEN` the job logs `solved prompt skipped: postmark disabled`
+   at INFO and sends nothing (local development, staging).
+5. Rotating `POSTMARK_TOKEN` also rotates the derived signing key, so emailed
+   links still outstanding stop working (they show "This link doesn't work").
+
+Troubleshooting: the job logs `solved prompt sent` / `solved prompt skipped: <reason>`
+with problem and solution ids (never the address). A Postmark 422 (e.g.
+inactive recipient, unverified sender) is logged at WARN as
+`solved prompt refused by postmark` with Postmark's error code (look the
+code up in Postmark's API docs; the message is not logged as it can quote the address) and not
+retried; other failures retry up to 5 times and then trip the "job discarded"
+alert. Postmark's Activity tab shows each message and bounce.
+
 ## Alerts
 
 Fly's managed Prometheus scrapes `[metrics]` (port 9091, `/metrics`). Query it

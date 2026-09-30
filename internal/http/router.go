@@ -34,6 +34,7 @@ func (h *Handlers) Router(staticDir string) http.Handler {
 		h.mountAdmin(r)
 		h.mountPages(r)
 		h.mountDiscovery(r)
+		h.mountOutcomes(r)
 	})
 	r.NotFound(h.wrap(func(w http.ResponseWriter, r *http.Request) error { return errNotFoundPage }))
 	return r
