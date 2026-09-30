@@ -15,13 +15,14 @@ import (
 const SessionCookie = "us_session"
 
 type Auth struct {
-	cfg config.Config
-	svc *service.Service
-	log *slog.Logger
+	cfg  config.Config
+	svc  *service.Service
+	log  *slog.Logger
+	prov *providers
 }
 
 func New(cfg config.Config, svc *service.Service, log *slog.Logger) *Auth {
-	return &Auth{cfg: cfg, svc: svc, log: log}
+	return &Auth{cfg: cfg, svc: svc, log: log, prov: newProviders()}
 }
 
 // LoadSession reads the us_session cookie and puts the viewer in the request
