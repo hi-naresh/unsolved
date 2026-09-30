@@ -4,20 +4,29 @@ package partials
 // <div id="similar">. Links open in a new tab so the draft isn't lost.
 templ DiscoverySimilar(items []ProblemLink) {
 	if len(items) > 0 {
-		<div class="rounded border border-amber-300 bg-amber-50 p-3 text-sm">
-			<p class="font-medium">These look similar — is yours one of them?</p>
-			<ul class="mt-2 list-disc space-y-1 pl-5">
+		<div class="note note-warn mt-3 block" role="status">
+			<div class="flex items-start gap-2.5">
+				<svg class="mt-0.5 size-4 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"></circle><path d="m13 13 4 4" stroke-linecap="round"></path></svg>
+				<div class="min-w-0 flex-1">
+					<p class="font-semibold">These look similar — is yours one of them?</p>
+					<p class="mt-0.5 text-[13px] opacity-80">If it is, add a revision or a solution there instead. If not, carry on.</p>
+				</div>
+			</div>
+			<ul class="mt-2.5 space-y-1">
 				for _, it := range items {
 					<li>
-						<a href={ it.URL() } target="_blank" rel="noopener" class="hover:underline">{ it.Title }</a>
-						<span class="text-stone-500">· { it.Domain }</span>
-						if it.Solved {
-							<span class="text-green-700">· solved</span>
-						}
+						<a href={ it.URL() } target="_blank" rel="noopener" class="group flex items-center gap-2 rounded-lg bg-white/70 px-2.5 py-1.5 text-stone-800 ring-1 ring-stone-200 transition hover:ring-stone-300">
+							<span class="min-w-0 flex-1 truncate font-medium group-hover:underline">{ it.Title }</span>
+							if it.Solved {
+								<span class="chip chip-solved">solved</span>
+							}
+							<span class="hidden shrink-0 text-xs text-stone-500 sm:inline">{ it.Domain }</span>
+							<svg class="size-3.5 shrink-0 text-stone-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 5h7v7M15 5l-9 9" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+							<span class="sr-only">(opens in a new tab)</span>
+						</a>
 					</li>
 				}
 			</ul>
-			<p class="mt-2 text-stone-600">If it is, add a revision or a solution there instead. If not, carry on.</p>
 		</div>
 	}
 }

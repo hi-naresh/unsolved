@@ -1,6 +1,8 @@
 package pages
 
 import (
+	"strconv"
+
 	"github.com/hi-naresh/unsolved/internal/auth"
 	"github.com/hi-naresh/unsolved/internal/views/layouts"
 	"github.com/hi-naresh/unsolved/internal/views/partials"
@@ -20,60 +22,181 @@ type NewProblemForm struct {
 	Errors         map[string]string
 }
 
+// formProcessPlaceholder shows the one-step-per-line shape we want.
+const formProcessPlaceholder = "Customer emails a PDF order\nSales re-types it into the ERP\nWarehouse prints a pick list\nTypos get fixed by phone"
+
 // NewProblem is /new. Fields are in the order the build doc fixes; there is
 // deliberately no field asking what should be built.
 templ NewProblem(f NewProblemForm) {
-	@layouts.Base("Post a problem") {
-		<h1 class="text-2xl font-semibold">Post a problem</h1>
-		<p class="mt-1 text-stone-600">Describe what happens today. Leave the solution to the community.</p>
-		<form method="post" action="/problems" class="mt-6 space-y-5">
-			<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
-			<label class="block">
-				<span class="font-medium">Domain</span>
-				<select name="domain_id" required class="field">
-					<option value="" selected?={ f.DomainID == "" }>Choose…</option>
-					for _, d := range f.Domains {
-						<option value={ d.ID } selected?={ f.DomainID == d.ID }>{ d.Name }</option>
+	@layouts.BaseWide("Post a problem") {
+		<div class="mx-auto max-w-6xl sm:pt-3">
+			<header class="max-w-2xl">
+				<p class="kicker">New problem</p>
+				<h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Post a problem</h1>
+				<p class="mt-2 text-[15px] leading-relaxed text-stone-600">Describe what happens today in a few short lines. Leave the solution to the community.</p>
+			</header>
+			<form method="post" action="/problems" data-preview-form class="mt-6 grid grid-cols-1 gap-6 lg:mt-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10">
+				<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+				<ol class="steps">
+					@formStep(1, "domain-label", "Which field is this in?", "Pick the closest fit. It decides who sees it first.", false) {
+						<div role="radiogroup" aria-labelledby="domain-label" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+							for _, d := range f.Domains {
+								<label class="pick">
+									<input type="radio" name="domain_id" value={ d.ID } required checked?={ f.DomainID == d.ID } data-name={ d.Name }/>
+									<span class="min-w-0 leading-tight">{ d.Name }</span>
+									@formPickCheck()
+								</label>
+							}
+						</div>
+						@partials.ProblemFieldError(f.Errors, "domain_id")
 					}
-				</select>
-				@partials.ProblemFieldError(f.Errors, "domain_id")
-			</label>
-			<label class="block">
-				<span class="font-medium">Describe how this is done today, step by step</span>
-				<textarea
-					name="current_process"
-					rows="8"
-					required
-					minlength="50"
-					maxlength="4000"
-					class="field"
-					hx-post="/new/similar"
-					hx-trigger="keyup changed delay:800ms"
-					hx-target="#similar"
-					hx-include="closest form"
-					hx-swap="innerHTML"
-				>{ f.CurrentProcess }</textarea>
-				@partials.ProblemFieldError(f.Errors, "current_process")
-			</label>
-			<div id="similar"></div>
-			<label class="block">
-				<span class="font-medium">What goes wrong or costs time?</span>
-				<textarea name="pain" rows="4" required minlength="20" maxlength="2000" class="field">{ f.Pain }</textarea>
-				@partials.ProblemFieldError(f.Errors, "pain")
-			</label>
-			<label class="block">
-				<span class="font-medium">What have you already tried?</span>
-				<textarea name="tried" rows="3" maxlength="2000" class="field" placeholder="nothing yet">{ f.Tried }</textarea>
-				@partials.ProblemFieldError(f.Errors, "tried")
-			</label>
-			<label class="block">
-				<span class="font-medium">One-line title</span>
-				<input type="text" name="title" required minlength="10" maxlength="140" value={ f.Title } class="field"/>
-				@partials.ProblemFieldError(f.Errors, "title")
-			</label>
-			@partials.ProblemDisplayToggle(f.Handle, f.Display)
-			@partials.ProblemFieldError(f.Errors, "display")
-			<button type="submit" class="btn">Post problem</button>
-		</form>
+					@formStep(2, "current_process-label", "How is it done today?", "Write each step on its own line — 3 to 6 steps is ideal. Who does what, in plain words.", false) {
+						<textarea
+							id="current_process"
+							name="current_process"
+							aria-labelledby="current_process-label"
+							rows="6"
+							required
+							minlength="50"
+							maxlength="4000"
+							data-aim="500"
+							placeholder={ formProcessPlaceholder }
+							class="field field-lined"
+							hx-post="/new/similar"
+							hx-trigger="keyup changed delay:800ms"
+							hx-target="#similar"
+							hx-include="closest form"
+							hx-swap="innerHTML"
+						>{ f.CurrentProcess }</textarea>
+						@formAimMeter("current_process")
+						@partials.ProblemFieldError(f.Errors, "current_process")
+						<div id="similar"></div>
+					}
+					@formStep(3, "pain-label", "What goes wrong?", "One or two sentences. What does it cost — hours, money, mistakes?", false) {
+						<textarea id="pain" name="pain" aria-labelledby="pain-label" rows="3" required minlength="20" maxlength="2000" data-aim="240" placeholder="Re-typing takes 6 hours a week, and one order in twenty has a typo." class="field field-lined">{ f.Pain }</textarea>
+						@formAimMeter("pain")
+						@partials.ProblemFieldError(f.Errors, "pain")
+					}
+					@formStep(4, "tried-label", "What have you tried?", "Tools, workarounds — or “nothing yet”.", true) {
+						<textarea id="tried" name="tried" aria-labelledby="tried-label" rows="2" maxlength="2000" data-aim="240" placeholder="nothing yet" class="field field-lined">{ f.Tried }</textarea>
+						@formAimMeter("tried")
+						@partials.ProblemFieldError(f.Errors, "tried")
+					}
+					@formStep(5, "title-label", "Sum it up in one line", "Name the problem, not a fix. Under 80 characters reads best.", false) {
+						<input id="title" type="text" name="title" aria-labelledby="title-label" required minlength="10" maxlength="140" data-aim="80" value={ f.Title } placeholder="Re-keying emailed PDF orders into the ERP by hand" class="field mt-0"/>
+						@formAimMeter("title")
+						@partials.ProblemFieldError(f.Errors, "title")
+					}
+					<li class="px-1 pt-2">
+						<p class="kicker mb-2">Post as</p>
+						@partials.ProblemDisplayToggle(f.Handle, f.Display)
+						@partials.ProblemFieldError(f.Errors, "display")
+					</li>
+				</ol>
+				<aside class="space-y-4 lg:sticky lg:top-20 lg:self-start" aria-label="Live preview">
+					@formPreviewHead(5)
+					@formProblemPreview(formDomainName(f.Domains, f.DomainID))
+					<button type="submit" class="btn w-full py-2.5 text-[15px]">Post problem</button>
+					<p class="text-center text-xs text-stone-500">Anyone can suggest a revision later — the best version wins by votes.</p>
+				</aside>
+			</form>
+		</div>
+		<script src="/static/js/forms.js" defer></script>
 	}
+}
+
+func formDomainName(ds []ProblemDomainOption, id string) string {
+	for _, d := range ds {
+		if d.ID == id {
+			return d.Name
+		}
+	}
+	return ""
+}
+
+// formStep is one numbered question of a guided form. labelID names the
+// heading so the field inside can point at it with aria-labelledby.
+templ formStep(n int, labelID, title, hint string, optional bool) {
+	<li class="step" data-step>
+		<div class="step-head">
+			<span class="step-num" aria-hidden="true">
+				<span>{ strconv.Itoa(n) }</span>
+				<svg class="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m5 10.5 3.2 3L15 6.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+			</span>
+			<div class="min-w-0">
+				<h2 class="step-title" id={ labelID }>
+					{ title }
+					if optional {
+						<span class="opt-tag">optional</span>
+					}
+				</h2>
+				<p class="hint">{ hint }</p>
+			</div>
+		</div>
+		<div class="step-body">
+			{ children... }
+		</div>
+	</li>
+}
+
+// formAimMeter is the length guidance under a field: app.js/forms.js fill the
+// counter; forms.js grows the bar towards the field's data-aim.
+templ formAimMeter(id string) {
+	<div class="meter-row">
+		<span class="meter" aria-hidden="true"><i id={ id + "-meter" }></i></span>
+		<span class="count" id={ id + "-count" }></span>
+	</div>
+}
+
+templ formPickCheck() {
+	<svg class="pick-check" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m5 10.5 3.2 3L15 6.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+}
+
+// formPreviewHead is the "live preview" label with one progress bar per step.
+templ formPreviewHead(steps int) {
+	<div>
+		<div class="flex items-baseline justify-between">
+			<p class="kicker">Live preview</p>
+			<p class="text-xs text-stone-500"><span data-progress>0</span> of { strconv.Itoa(steps) } answered</p>
+		</div>
+		<div class="dots mt-2" data-dots aria-hidden="true">
+			for i := 0; i < steps; i++ {
+				<span></span>
+			}
+		</div>
+	</div>
+}
+
+// formProblemPreview mirrors a problem card; static/js/forms.js fills it from the
+// form as the user types. User text is only ever set with textContent.
+templ formProblemPreview(domain string) {
+	<article class="card overflow-hidden" data-preview>
+		<div class="p-4 sm:p-5">
+			<div class="flex flex-wrap items-center gap-1.5">
+				<span class="chip chip-open">Open</span>
+				<span class="chip" data-pv="domain" data-empty="Domain">
+					if domain != "" {
+						{ domain }
+					} else {
+						Domain
+					}
+				</span>
+			</div>
+			<h3 class="mt-3 text-[17px] font-semibold leading-snug tracking-tight text-stone-900 [overflow-wrap:anywhere]" data-pv="title" data-empty="Your one-line title">Your one-line title</h3>
+			<p class="clamp-2 mt-1 text-sm leading-relaxed text-stone-600 [overflow-wrap:anywhere]" data-pv="pain" data-empty="What goes wrong, in one line.">What goes wrong, in one line.</p>
+			<p class="kicker mt-4">How it works today</p>
+			<ol class="flow pv-steps mt-2.5 text-sm text-stone-700 [overflow-wrap:anywhere]" data-pv-steps>
+				<li><span class="pv-skel w-4/5"></span></li>
+				<li><span class="pv-skel w-3/5"></span></li>
+				<li><span class="pv-skel w-2/3"></span></li>
+			</ol>
+			<p class="-mt-1 text-xs text-stone-500" data-pv-more hidden></p>
+			<p class="note note-info mt-3 py-2 text-xs" data-pv-tip hidden>Tip: put each step on its own line — the card shows them as a numbered flow.</p>
+		</div>
+		<div class="flex items-center gap-3 border-t border-stone-200 bg-stone-50 px-4 py-2.5 text-xs text-stone-500 sm:px-5">
+			<span class="inline-flex items-center gap-1"><svg class="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 4v12M5 9l5-5 5 5" stroke-linecap="round" stroke-linejoin="round"></path></svg>0 votes</span>
+			<span>0 solutions</span>
+			<span class="ml-auto">just now</span>
+		</div>
+	</article>
 }

@@ -52,39 +52,84 @@ func SignIn(next string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mx-auto max-w-sm\"><h1 class=\"text-2xl font-semibold\">Sign in to Unsolved</h1><p class=\"mt-3 text-stone-700\">Reading needs no account. To post, revise or vote, sign in with LinkedIn or X. There are no passwords.</p><div class=\"mt-6 flex flex-col gap-3\"><a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mx-auto max-w-sm sm:pt-8\"><div class=\"card p-6 sm:p-7\"><svg class=\"mx-auto size-11\" viewBox=\"0 0 32 32\" aria-hidden=\"true\"><rect width=\"32\" height=\"32\" rx=\"8\" class=\"fill-accent\"></rect> <path d=\"M10 9v8a6 6 0 0 0 12 0V9\" stroke=\"white\" stroke-width=\"3.2\" fill=\"none\" stroke-linecap=\"round\"></path></svg><h1 class=\"mt-4 text-center text-xl font-semibold tracking-tight\">Sign in to Unsolved</h1><p class=\"mt-1.5 text-center text-sm leading-relaxed text-stone-600\">Reading needs no account. To post, revise or vote, sign in with LinkedIn or X. There are no passwords.</p><div class=\"mt-6 space-y-2.5\"><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 templ.SafeURL
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(userSignInHref("linkedin", next))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/signin.templ`, Line: 23, Col: 46}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/signin.templ`, Line: 27, Col: 47}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" class=\"btn justify-center py-2\">Continue with LinkedIn</a> <a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" class=\"provider\"><span class=\"provider-mark\"><svg class=\"size-4\" viewBox=\"0 0 16 16\" fill=\"currentColor\" aria-hidden=\"true\"><circle cx=\"3.6\" cy=\"3.4\" r=\"1.6\"></circle><rect x=\"2.2\" y=\"6\" width=\"2.8\" height=\"7.5\" rx=\".4\"></rect><path d=\"M6.8 6h2.6v1.1c.5-.8 1.4-1.3 2.6-1.3 2 0 3 1.3 3 3.6v4.1h-2.8V9.9c0-1-.4-1.6-1.3-1.6-.9 0-1.5.6-1.5 1.7v3.5H6.8V6Z\"></path></svg></span> <span class=\"flex-1\">Continue with LinkedIn</span>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = signinChevron().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</a> <a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 templ.SafeURL
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(userSignInHref("x", next))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/signin.templ`, Line: 24, Col: 39}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/signin.templ`, Line: 34, Col: 40}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"btn justify-center py-2\">Continue with X</a></div><p class=\"mt-6 text-sm text-stone-500\">From LinkedIn or X we store only your account id and profile link — not your email, contacts or posts. You can post anonymously, export your data or delete your account at any time. <a href=\"/privacy\" class=\"underline\">Privacy</a></p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" class=\"provider\"><span class=\"provider-mark\"><svg class=\"size-3.5\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M3 2.5 13 13.5M13 2.5 3 13.5\"></path></svg></span> <span class=\"flex-1\">Continue with X</span>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = signinChevron().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</a></div><p class=\"mt-5 text-center text-xs text-stone-500\"><svg class=\"mr-1 inline size-3.5 -translate-y-px align-middle\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><rect x=\"4\" y=\"9\" width=\"12\" height=\"8.5\" rx=\"2\"></rect><path d=\"M7 9V6.5a3 3 0 0 1 6 0V9\"></path></svg> <span>We only store your provider id and profile link.</span></p></div><p class=\"mt-4 text-center text-xs leading-relaxed text-stone-500\">Never your email, contacts or posts. Post anonymously, export your data or delete your account any time. <a href=\"/privacy\" class=\"font-medium text-stone-700 underline decoration-stone-300 underline-offset-2 hover:decoration-stone-500\">Privacy</a></p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
 		templ_7745c5c3_Err = layouts.Base("Sign in").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func signinChevron() templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var5 == nil {
+			templ_7745c5c3_Var5 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<svg class=\"size-4 text-stone-400\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"m8 5 5 5-5 5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

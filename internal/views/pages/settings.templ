@@ -18,101 +18,174 @@ type SettingsForm struct {
 
 templ userFieldError(errs map[string]string, field string) {
 	if msg, ok := errs[field]; ok {
-		<p class="error">{ msg }</p>
+		<p class="error dark:text-red-400">{ msg }</p>
 	}
+}
+
+// formSettingsGroup is one card of the settings page.
+templ formSettingsGroup(title, sub string, icon templ.Component) {
+	<section class="sgroup">
+		<div class="sgroup-head">
+			<span class="sgroup-icon">
+				@icon
+			</span>
+			<div class="min-w-0">
+				<h2 class="text-[15px] font-semibold">{ title }</h2>
+				<p class="text-[13px] text-stone-500">{ sub }</p>
+			</div>
+		</div>
+		<div class="sgroup-body">
+			{ children... }
+		</div>
+	</section>
+}
+
+templ formIconUser() {
+	<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="7" r="3.2"></circle><path d="M3.8 16.5c1.1-2.8 3.4-4.3 6.2-4.3s5.1 1.5 6.2 4.3" stroke-linecap="round"></path></svg>
+}
+
+templ formIconPeople() {
+	<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="7.5" cy="7.5" r="2.7"></circle><circle cx="13.8" cy="8.3" r="2.2"></circle><path d="M2.5 16c.8-2.4 2.7-3.8 5-3.8s4.2 1.4 5 3.8M13 12.3c2.2-.2 3.9 1 4.5 3.2" stroke-linecap="round"></path></svg>
+}
+
+templ formIconMail() {
+	<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2.8" y="4.5" width="14.4" height="11" rx="2"></rect><path d="m3.5 5.5 6.5 5 6.5-5" stroke-linejoin="round"></path></svg>
+}
+
+templ formIconData() {
+	<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><ellipse cx="10" cy="5" rx="6" ry="2.2"></ellipse><path d="M4 5v10c0 1.2 2.7 2.2 6 2.2s6-1 6-2.2V5M4 10c0 1.2 2.7 2.2 6 2.2s6-1 6-2.2"></path></svg>
 }
 
 templ Settings(f SettingsForm) {
 	@layouts.Base("Settings") {
-		<h1 class="text-2xl font-semibold">Settings</h1>
+		<header>
+			<p class="kicker">Account</p>
+			<h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Settings</h1>
+		</header>
 		if f.Saved {
-			<p class="mt-4 rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">Saved.</p>
+			<p class="note note-ok mt-4" role="status">
+				<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 10.5 3.2 3L15 6.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+				<span>Saved.</span>
+			</p>
 		}
 		if f.Suspended {
-			<p class="mt-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-				Your account is suspended, so you can't change your profile. You can still export your data or delete your account.
+			<p class="note note-warn mt-4">
+				<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 3 2.5 16.5h15L10 3Z" stroke-linejoin="round"></path><path d="M10 8.5v3.5M10 14.3v.2" stroke-linecap="round"></path></svg>
+				<span>Your account is suspended, so you can't change your profile. You can still export your data or delete your account.</span>
 			</p>
 		}
-		<form method="post" action="/settings" class="mt-6 space-y-6">
+		<form method="post" action="/settings" class="mt-6">
 			<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
-			<fieldset disabled?={ f.Suspended } class="space-y-6">
-				<div>
-					<label for="handle" class="block text-sm font-medium">Handle</label>
-					<div class="mt-1 flex items-center gap-1">
-						<span class="text-stone-500">{ "@" }</span>
-						<input
-							id="handle"
-							name="handle"
-							value={ f.Handle }
-							required
-							minlength="3"
-							maxlength="24"
-							pattern="[a-z0-9_]{3,24}"
-							autocomplete="off"
-							class="field mt-0"
-						/>
+			<fieldset disabled?={ f.Suspended } class="space-y-4 disabled:opacity-60">
+				@formSettingsGroup("Profile", "How you appear on posts you make under your name.", formIconUser()) {
+					<div>
+						<label for="handle" class="block text-sm font-medium">Handle</label>
+						<div class="adorn">
+							<span aria-hidden="true">{ "@" }</span>
+							<input
+								id="handle"
+								name="handle"
+								value={ f.Handle }
+								required
+								minlength="3"
+								maxlength="24"
+								pattern="[a-z0-9_]{3,24}"
+								autocomplete="off"
+								autocapitalize="none"
+								spellcheck="false"
+								aria-describedby="handle-hint"
+								data-handle
+							/>
+						</div>
+						<p id="handle-hint" class="hint mt-1.5" data-default={ formHandleRule }>{ formHandleRule }</p>
+						@userFieldError(f.Errors, "handle")
 					</div>
-					@userFieldError(f.Errors, "handle")
-				</div>
-				<div>
-					<label class="flex items-start gap-2 text-sm">
-						<input type="checkbox" name="in_directory" value="1" checked?={ f.InDirectory } class="mt-0.5"/>
-						<span>
+					<div>
+						<label for="declared_history" class="block text-sm font-medium">Declared history</label>
+						<p class="hint">Your background, in your words. Shown on your profile labelled "unverified"; it carries no weight in ranking.</p>
+						<textarea id="declared_history" name="declared_history" rows="4" maxlength="2000" data-aim="400" placeholder="e.g. Ran dispatch at a haulage firm for six years." class="field leading-relaxed">{ f.DeclaredHistory }</textarea>
+						<div class="meter-row">
+							<span class="meter" aria-hidden="true"><i id="declared_history-meter"></i></span>
+							<span class="count" id="declared_history-count"></span>
+						</div>
+						@userFieldError(f.Errors, "declared_history")
+					</div>
+				}
+				@formSettingsGroup("Directory", "Whether other members can find you.", formIconPeople()) {
+					<label class="flex cursor-pointer items-start gap-3">
+						<input type="checkbox" name="in_directory" value="1" checked?={ f.InDirectory } class="switch"/>
+						<span class="text-sm">
 							<span class="font-medium">List me in the members directory</span>
-							<span class="block text-stone-500">Also shows your LinkedIn or X link on your profile.</span>
+							<span class="mt-0.5 block text-stone-500">Also shows your LinkedIn or X link on your profile.</span>
 						</span>
 					</label>
+				}
+				@formSettingsGroup("Email", "Optional. Never shown to anyone.", formIconMail()) {
+					<div>
+						<label for="email" class="block text-sm font-medium">Email address</label>
+						<p class="hint">Used only to ask whether a solution to your problem worked. Leave empty to remove it.</p>
+						<input id="email" name="email" type="email" value={ f.Email } maxlength="254" autocomplete="email" placeholder="you@example.com" class="field"/>
+						@userFieldError(f.Errors, "email")
+					</div>
+				}
+				<div class="flex justify-end">
+					<button type="submit" class="btn px-5">Save changes</button>
 				</div>
-				<div>
-					<label for="declared_history" class="block text-sm font-medium">Declared history</label>
-					<p class="text-xs text-stone-500">
-						Your background, in your words. Shown on your profile labelled "unverified"; it carries no weight in ranking.
-					</p>
-					<textarea id="declared_history" name="declared_history" rows="5" maxlength="2000" class="field">{ f.DeclaredHistory }</textarea>
-					@userFieldError(f.Errors, "declared_history")
-				</div>
-				<div>
-					<label for="email" class="block text-sm font-medium">Email <span class="font-normal text-stone-500">(optional)</span></label>
-					<p class="text-xs text-stone-500">
-						Used only to ask whether a solution to your problem worked. Never shown. Leave empty to remove it.
-					</p>
-					<input id="email" name="email" type="email" value={ f.Email } maxlength="254" autocomplete="email" class="field"/>
-					@userFieldError(f.Errors, "email")
-				</div>
-				<button type="submit" class="btn">Save</button>
 			</fieldset>
 		</form>
-		<section class="mt-12 border-t border-stone-200 pt-6">
-			<h2 class="text-lg font-semibold">Your data</h2>
-			<p class="mt-2 text-sm text-stone-700">
-				Download everything you've written or done here as JSON, including anonymous posts.
-			</p>
-			<a href="/settings/export" class="btn-secondary mt-3">Export my data</a>
-			<p class="mt-6 text-sm text-stone-700">
-				Deleting your account removes your sign-in links and profile. Your posts stay, shown as "deleted user".
-			</p>
-			<a href="/settings/delete" class="btn-secondary mt-3 text-red-700">Delete my account…</a>
-		</section>
+		<div class="mt-8">
+			@formSettingsGroup("Your data", "Take it with you, or leave for good.", formIconData()) {
+				<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+					<div class="text-sm">
+						<p class="font-medium">Export</p>
+						<p class="text-stone-500">Download everything you've written or done here as JSON, including anonymous posts.</p>
+					</div>
+					<a href="/settings/export" class="btn-secondary shrink-0">
+						<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 3.5v9M6 9l4 4 4-4M4 16.5h12" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+						Export my data
+					</a>
+				</div>
+				<div class="flex flex-col gap-3 border-t border-stone-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+					<div class="text-sm">
+						<p class="font-medium text-red-700 dark:text-red-300">Delete account</p>
+						<p class="text-stone-500">Removes your sign-in links and profile. Your posts stay, shown as "deleted user".</p>
+					</div>
+					<a href="/settings/delete" class="btn-danger-soft shrink-0">Delete my account…</a>
+				</div>
+			}
+		</div>
+		<script src="/static/js/forms.js" defer></script>
 	}
 }
 
 // DeleteAccount is the confirmation page for /settings/delete.
 templ DeleteAccount(handle string) {
 	@layouts.Base("Delete account") {
-		<h1 class="text-2xl font-semibold">Delete your account?</h1>
-		<div class="mt-4 space-y-3 text-stone-700">
-			<p>This signs you out everywhere and cannot be undone. We will:</p>
-			<ul class="list-disc space-y-1 pl-6">
-				<li>remove the LinkedIn / X links that let you sign in as { "@" + handle };</li>
-				<li>clear your name, handle, declared history and email;</li>
-				<li>keep your problems, solutions and revisions, shown as "deleted user".</li>
-			</ul>
-			<p>If you sign in again later with the same provider account, you'll start a fresh, unconnected account.</p>
+		<div class="mx-auto max-w-lg sm:pt-4">
+			<div class="card overflow-hidden">
+				<div class="border-b border-red-500/20 bg-red-500/5 px-5 py-4">
+					<div class="flex items-center gap-3">
+						<span class="grid size-9 place-items-center rounded-full bg-red-500/12 text-red-600 dark:text-red-300">
+							<svg class="size-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 3 2.5 16.5h15L10 3Z" stroke-linejoin="round"></path><path d="M10 8.5v3.5M10 14.3v.2" stroke-linecap="round"></path></svg>
+						</span>
+						<h1 class="text-xl font-semibold tracking-tight">Delete your account?</h1>
+					</div>
+				</div>
+				<div class="space-y-3 px-5 py-4 text-sm leading-relaxed text-stone-700">
+					<p>This signs you out everywhere and cannot be undone. We will:</p>
+					<ul class="space-y-2">
+						<li class="flex gap-2"><span class="mt-2 size-1.5 shrink-0 rounded-full bg-red-500"></span><span>remove the LinkedIn / X links that let you sign in as { "@" + handle };</span></li>
+						<li class="flex gap-2"><span class="mt-2 size-1.5 shrink-0 rounded-full bg-red-500"></span><span>clear your name, handle, declared history and email;</span></li>
+						<li class="flex gap-2"><span class="mt-2 size-1.5 shrink-0 rounded-full bg-stone-400"></span><span>keep your problems, solutions and revisions, shown as "deleted user".</span></li>
+					</ul>
+					<p class="text-stone-500">If you sign in again later with the same provider account, you'll start a fresh, unconnected account.</p>
+				</div>
+				<form method="post" action="/settings/delete" class="flex flex-col-reverse gap-2 border-t border-stone-200 bg-stone-50 px-5 py-3 sm:flex-row sm:justify-end">
+					<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+					<a href="/settings" class="btn-secondary">Cancel</a>
+					<button type="submit" class="btn-danger">Delete my account</button>
+				</form>
+			</div>
 		</div>
-		<form method="post" action="/settings/delete" class="mt-6 flex gap-3">
-			<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
-			<button type="submit" class="inline-flex items-center rounded bg-red-700 px-3 py-1.5 text-sm text-white hover:bg-red-800">Delete my account</button>
-			<a href="/settings" class="btn-secondary">Cancel</a>
-		</form>
 	}
 }

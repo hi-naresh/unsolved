@@ -3,15 +3,17 @@ package partials
 // ProblemDisplayToggle is the per-post "Posting as @handle / Posting
 // anonymously" choice. current is "named" or "anonymous".
 templ ProblemDisplayToggle(handle, current string) {
-	<fieldset class="flex flex-wrap gap-4 text-sm">
+	<fieldset class="who">
 		<legend class="sr-only">Posting as</legend>
-		<label class="inline-flex items-center gap-1.5">
+		<label>
 			<input type="radio" name="display" value="named" checked?={ current != "anonymous" }/>
-			Posting as { "@" + handle }
+			<svg class="size-4 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="7" r="3.2"></circle><path d="M3.8 16.5c1.1-2.8 3.4-4.3 6.2-4.3s5.1 1.5 6.2 4.3" stroke-linecap="round"></path></svg>
+			<span class="min-w-0 text-center leading-tight [overflow-wrap:anywhere]">Posting as { "@" + handle }</span>
 		</label>
-		<label class="inline-flex items-center gap-1.5">
+		<label>
 			<input type="radio" name="display" value="anonymous" checked?={ current == "anonymous" }/>
-			Posting anonymously
+			<svg class="size-4 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2.5 10s2.8-5 7.5-5 7.5 5 7.5 5-2.8 5-7.5 5-7.5-5-7.5-5Z" stroke-linejoin="round"></path><path d="m3.5 3.5 13 13" stroke-linecap="round"></path></svg>
+			<span class="min-w-0 text-center leading-tight [overflow-wrap:anywhere]">Posting anonymously</span>
 		</label>
 	</fieldset>
 }
@@ -19,6 +21,9 @@ templ ProblemDisplayToggle(handle, current string) {
 // ProblemFieldError renders one field's validation message.
 templ ProblemFieldError(errs map[string]string, field string) {
 	if msg, ok := errs[field]; ok {
-		<p class="error" id={ field + "-error" }>{ msg }</p>
+		<p class="error flex items-start gap-1.5 dark:text-red-400" id={ field + "-error" }>
+			<svg class="mt-0.5 size-4 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="7.5"></circle><path d="M10 6.2v4.6M10 13.6v.2" stroke-linecap="round"></path></svg>
+			<span>{ msg }</span>
+		</p>
 	}
 }
