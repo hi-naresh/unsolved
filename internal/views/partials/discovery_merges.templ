@@ -1,0 +1,51 @@
+package partials
+
+import (
+	"fmt"
+
+	"github.com/hi-naresh/unsolved/internal/auth"
+)
+
+// MergeRow is one admin merge suggestion.
+type MergeRow struct {
+	ID         string
+	Similarity float32
+	ProblemA   string
+	TitleA     string
+	ProblemB   string
+	TitleB     string
+}
+
+// DiscoveryMerges is the /admin/merges list; Next is the ?after= cursor.
+templ DiscoveryMerges(rows []MergeRow, next string) {
+	<div id="merges">
+		if len(rows) == 0 {
+			<p class="mt-3 text-stone-600">No open merge suggestions.</p>
+		} else {
+			<ul class="mt-3 divide-y divide-stone-200 rounded border border-stone-200 bg-white">
+				for _, m := range rows {
+					@DiscoveryMergeRow(m)
+				}
+			</ul>
+			if next != "" {
+				<a class="mt-4 inline-block text-sm hover:underline" href={ templ.SafeURL("/admin/merges?after=" + next) }>Next page →</a>
+			}
+		}
+	</div>
+}
+
+templ DiscoveryMergeRow(m MergeRow) {
+	<li class="flex items-start gap-4 px-4 py-3" id={ "merge-" + m.ID }>
+		<div class="flex-1 text-sm">
+			<a class="font-medium hover:underline" href={ templ.SafeURL("/p/" + m.ProblemA) }>{ m.TitleA }</a>
+			<div class="text-stone-500">and</div>
+			<a class="font-medium hover:underline" href={ templ.SafeURL("/p/" + m.ProblemB) }>{ m.TitleB }</a>
+			<div class="mt-1 text-xs text-stone-500">{ fmt.Sprintf("%.0f%% similar", m.Similarity*100) }</div>
+		</div>
+		<form method="post" action={ templ.SafeURL("/admin/merges/" + m.ID + "/dismiss") }
+			hx-post={ "/admin/merges/" + m.ID + "/dismiss" } hx-target={ "#merge-" + m.ID } hx-swap="outerHTML">
+			<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+			<button type="submit" class="rounded border border-stone-300 px-2 py-1 text-sm hover:bg-stone-100">Dismiss</button>
+		</form>
+	</li>
+}

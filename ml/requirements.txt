@@ -1,0 +1,10 @@
+# Runtime. torch comes in as a sentence-transformers dependency; the
+# Dockerfile installs the CPU-only wheel first so the image stays small.
+fastapi==0.115.*
+uvicorn[standard]==0.32.*
+pydantic==2.*
+numpy<3
+sentence-transformers==3.*
+# Tests
+pytest==8.*
+httpx==0.28.*

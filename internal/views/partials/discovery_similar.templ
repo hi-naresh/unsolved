@@ -1,0 +1,23 @@
+package partials
+
+// DiscoverySimilar is the posting form's duplicate hint, swapped into
+// <div id="similar">. Links open in a new tab so the draft isn't lost.
+templ DiscoverySimilar(items []ProblemLink) {
+	if len(items) > 0 {
+		<div class="rounded border border-amber-300 bg-amber-50 p-3 text-sm">
+			<p class="font-medium">These look similar — is yours one of them?</p>
+			<ul class="mt-2 list-disc space-y-1 pl-5">
+				for _, it := range items {
+					<li>
+						<a href={ it.URL() } target="_blank" rel="noopener" class="hover:underline">{ it.Title }</a>
+						<span class="text-stone-500">· { it.Domain }</span>
+						if it.Solved {
+							<span class="text-green-700">· solved</span>
+						}
+					</li>
+				}
+			</ul>
+			<p class="mt-2 text-stone-600">If it is, add a revision or a solution there instead. If not, carry on.</p>
+		</div>
+	}
+}
