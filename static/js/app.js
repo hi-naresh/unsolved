@@ -4,34 +4,42 @@
   var wide = window.matchMedia("(min-width: 1024px)");
 
   // Explorer: on wide screens a problem card opens in the preview pane
-  // instead of navigating; the URL still updates so it can be shared.
-  document.addEventListener("click", function (e) {
-    var a = e.target.closest && e.target.closest("a[data-pane-link]");
-    if (!a || !wide.matches || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+  // instead of navigating; the hash keeps the selection shareable.
+  function openInPane(a, remember) {
     var pane = document.getElementById("pane");
-    if (!pane || !window.htmx) return;
-    e.preventDefault();
-    markActive(a.getAttribute("data-pane-link"));
-    htmx.ajax("GET", a.getAttribute("href"), { target: "#pane", swap: "innerHTML" }).then(function () {
-      pane.scrollTop = 0;
-    });
-    history.replaceState(null, "", "#" + a.getAttribute("data-pane-link"));
-  });
-
+    if (!pane || !window.htmx) return false;
+    var id = a.getAttribute("data-pane-link");
+    markActive(id);
+    htmx.ajax("GET", a.getAttribute("href"), { target: "#pane", swap: "innerHTML" });
+    if (remember) history.replaceState(null, "", "#" + id);
+    return true;
+  }
   function markActive(id) {
     document.querySelectorAll("a[data-pane-link]").forEach(function (el) {
       el.setAttribute("aria-current", el.getAttribute("data-pane-link") === id ? "true" : "false");
     });
   }
-  // Deep link: /#<problem-id> opens that problem in the pane.
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest("a[data-pane-link]");
+    if (!a || !wide.matches || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    if (openInPane(a, true)) e.preventDefault();
+  });
+  // On load, open the problem named in the hash, else the first one.
   document.addEventListener("DOMContentLoaded", function () {
+    if (!wide.matches || !document.getElementById("pane")) return;
     var id = location.hash.slice(1);
-    var link = id && document.querySelector('a[data-pane-link="' + CSS.escape(id) + '"]');
-    if (link && wide.matches) link.click();
-    else if (wide.matches) {
-      var first = document.querySelector("a[data-pane-link]");
-      if (first) markActive(first.getAttribute("data-pane-link"));
-    }
+    var link = (id && document.querySelector('a[data-pane-link="' + CSS.escape(id) + '"]')) ||
+      document.querySelector("a[data-pane-link]");
+    if (link) openInPane(link, false);
+  });
+  // Keyboard: j / k move through the list when focus isn't in a field.
+  document.addEventListener("keydown", function (e) {
+    if ((e.key !== "j" && e.key !== "k") || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) || !document.getElementById("pane")) return;
+    var links = Array.prototype.slice.call(document.querySelectorAll("a[data-pane-link]"));
+    var i = links.findIndex(function (l) { return l.getAttribute("aria-current") === "true"; });
+    var next = links[Math.max(0, Math.min(links.length - 1, i + (e.key === "j" ? 1 : -1)))];
+    if (next && wide.matches) { openInPane(next, true); next.scrollIntoView({ block: "nearest" }); next.focus({ preventScroll: true }); }
   });
 
   // "Show more" toggles for clamped text and collapsed step lists.

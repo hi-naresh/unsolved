@@ -112,7 +112,7 @@ func TestPhase1PostReviseVote(t *testing.T) {
 		mustStatus(t, app.as(t, app.newUser(t)).postHX("/r/"+child+"/vote", nil), http.StatusOK)
 	}
 	eventually(t, 10*time.Second, func() bool {
-		return strings.Contains(body(t, app.anon(t).get("/p/"+pid)), "<h1 class=\"text-2xl font-semibold leading-tight\">Re-keying weekly orders into the ERP by hand</h1>")
+		return strings.Contains(body(t, app.anon(t).get("/p/"+pid)), ">Re-keying weekly orders into the ERP by hand</h1>")
 	})
 	if currentRevision(t, app, pid) != child {
 		t.Fatal("current_revision_id not moved")

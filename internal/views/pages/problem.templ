@@ -2,6 +2,7 @@ package pages
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/hi-naresh/unsolved/internal/auth"
 	"github.com/hi-naresh/unsolved/internal/views"
@@ -65,122 +66,322 @@ type ProblemPageView struct {
 }
 
 templ Problem(v ProblemPageView) {
-	@layouts.Base(v.Title) {
+	@layouts.BaseWide(v.Title) {
+		<nav class="mb-4 flex items-center gap-1.5 text-sm text-stone-500" aria-label="Breadcrumb">
+			<a href="/" class="hover:text-stone-900">Explore</a>
+			<span aria-hidden="true">/</span>
+			<a href={ templ.SafeURL("/problems?domain=" + v.DomainSlug) } class="hover:text-stone-900">{ v.DomainName }</a>
+		</nav>
 		@ProblemContent(v)
 	}
 }
 
-// ProblemContent is the page body (the htmx partial for /p/{id}).
+// ProblemContent is the problem page body: the problem on the left, its
+// solutions on the right (stacked on small screens).
 templ ProblemContent(v ProblemPageView) {
-	<article id="problem" data-problem-id={ v.ID }>
-		if v.State == "invalid" {
-			<div class="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-				This problem was marked invalid. It stays visible for the record but can no longer be changed, voted on or answered.
-			</div>
-		}
-		<div class="flex flex-wrap items-center gap-2 text-xs text-stone-500">
-			<a href={ templ.SafeURL("/problems?domain=" + v.DomainSlug) } class="hover:underline">{ v.DomainName }</a>
-			<span class="rounded bg-stone-100 px-1.5 py-0.5 font-medium text-stone-700">{ partials.ProblemStateLabel(v.State) }</span>
-			if v.SoftSolved {
-				<span class="rounded bg-emerald-100 px-1.5 py-0.5 font-medium text-emerald-800" title="The top solution has enough votes">soft-solved</span>
-			}
-			if v.OnMetaBoard {
-				<a href="/meta" class="rounded bg-stone-100 px-1.5 py-0.5 hover:underline">meta</a>
-			}
-		</div>
-		<div class="mt-2 flex items-start gap-3">
-			@partials.VoteButton(v.Vote)
-			<h1 class="text-2xl font-semibold leading-tight">{ v.Title }</h1>
-		</div>
-		<p class="mt-2 flex flex-wrap items-center gap-x-1 text-sm text-stone-500">
-			Posted by
-			@views.Author(v.Poster, auth.UserFrom(ctx))
-			<span>· { v.PostedAt }</span>
-			if v.IsRevised {
-				<span>· current version by</span>
-				@views.Author(v.RevisionAuthor, auth.UserFrom(ctx))
-			}
-		</p>
-		if v.ForkedFrom != nil {
-			<p class="mt-1 text-sm text-stone-500">
-				Forked from <a href={ templ.SafeURL("/p/" + v.ForkedFrom.ID) } class="underline">{ v.ForkedFrom.Title }</a>
-			</p>
-		}
-		<section class="mt-6 space-y-4 text-stone-800">
-			<div>
-				<h2 class="text-sm font-semibold uppercase tracking-wide text-stone-500">How it's done today</h2>
-				<div class="mt-1 whitespace-pre-line">{ v.CurrentProcess }</div>
-			</div>
-			<div>
-				<h2 class="text-sm font-semibold uppercase tracking-wide text-stone-500">What goes wrong</h2>
-				<div class="mt-1 whitespace-pre-line">{ v.Pain }</div>
-			</div>
-			<div>
-				<h2 class="text-sm font-semibold uppercase tracking-wide text-stone-500">Already tried</h2>
-				<div class="mt-1 whitespace-pre-line">
-					if v.Tried == "" {
-						<span class="text-stone-500">Nothing yet.</span>
-					} else {
-						{ v.Tried }
-					}
-				</div>
-			</div>
-		</section>
-		<nav class="mt-6 flex flex-wrap items-center gap-4 text-sm">
-			<a href={ templ.SafeURL("/p/" + v.ID + "/evolution") } class="underline">How this evolved</a>
-			if v.CanWrite {
-				<a href={ templ.SafeURL("/p/" + v.ID + "/revise") } class="underline">Revise</a>
-				<form method="post" action={ templ.SafeURL("/p/" + v.ID + "/fork") } class="inline">
-					<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
-					<input type="hidden" name="revision_id" value={ v.RevisionID }/>
-					<button type="submit" class="underline">Fork</button>
-				</form>
-			}
-			<span class="flex-1"></span>
-			if auth.UserFrom(ctx) != nil {
-				@partials.ReportLink("problem_revision", v.RevisionID)
-			}
-			@partials.ProblemInterest(v.Interest)
-		</nav>
-		if len(v.Forks) > 0 {
-			<div class="mt-3 text-sm text-stone-600">
-				Forks:
-				for i, f := range v.Forks {
-					if i > 0 {
-						<span>·</span>
-					}
-					<a href={ templ.SafeURL("/p/" + f.ID) } class="underline">{ f.Title }</a>
+	<div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_440px]">
+		<article id="problem" data-problem-id={ v.ID } class="min-w-0">
+			@problemHeader(v, true)
+			@problemBody(v, 0)
+			<div class="mt-6 flex flex-wrap items-center gap-2 border-t border-stone-200 pt-4 text-sm">
+				<a href={ templ.SafeURL("/p/" + v.ID + "/evolution") } class="btn-ghost -ml-2.5">
+					<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="5" cy="5" r="2"></circle><circle cx="5" cy="15" r="2"></circle><circle cx="15" cy="10" r="2"></circle><path d="M5 7v6M7 5c4 0 6 2 6 5M7 15c4 0 6-2 6-5"></path></svg>
+					How this evolved
+				</a>
+				if v.CanWrite {
+					<a href={ templ.SafeURL("/p/" + v.ID + "/revise") } class="btn-ghost">
+						<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m12.5 4.5 3 3L7 16H4v-3l8.5-8.5Z" stroke-linejoin="round"></path></svg>
+						Revise
+					</a>
+					<form method="post" action={ templ.SafeURL("/p/" + v.ID + "/fork") } class="inline">
+						<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+						<input type="hidden" name="revision_id" value={ v.RevisionID }/>
+						<button type="submit" class="btn-ghost" title="Start a separate problem from this version">
+							<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="6" cy="4.5" r="1.8"></circle><circle cx="14" cy="4.5" r="1.8"></circle><circle cx="10" cy="15.5" r="1.8"></circle><path d="M6 6.3v1.2c0 2 4 2 4 4v2.2M14 6.3v1.2c0 2-4 2-4 4"></path></svg>
+							Fork
+						</button>
+					</form>
 				}
+				if auth.UserFrom(ctx) != nil {
+					@partials.ReportLink("problem_revision", v.RevisionID)
+				}
+				<span class="flex-1"></span>
+				@partials.ProblemInterest(v.Interest)
 			</div>
-		}
-		@problemStatePanel(v)
-	</article>
-	<section class="mt-10" id="solutions">
-		<h2 class="text-xl font-semibold">Solutions</h2>
-		if len(v.Solutions) == 0 {
-			<p class="mt-2 text-stone-500">No solutions yet.</p>
-		}
-		<div class="mt-4 space-y-4">
-			for _, s := range v.Solutions {
-				@partials.SolutionCard(s)
+			if v.ForkedFrom != nil || len(v.Forks) > 0 {
+				<div class="mt-4 rounded-lg bg-stone-100 px-4 py-3 text-sm text-stone-600">
+					if v.ForkedFrom != nil {
+						<p>Forked from <a href={ templ.SafeURL("/p/" + v.ForkedFrom.ID) } class="font-medium text-stone-900 underline decoration-stone-300 underline-offset-2 hover:decoration-stone-900">{ v.ForkedFrom.Title }</a></p>
+					}
+					if len(v.Forks) > 0 {
+						<p>
+							Forks:
+							for i, f := range v.Forks {
+								if i > 0 {
+									<span>·</span>
+								}
+								<a href={ templ.SafeURL("/p/" + f.ID) } class="font-medium text-stone-900 underline decoration-stone-300 underline-offset-2 hover:decoration-stone-900">{ f.Title }</a>
+							}
+						</p>
+					}
+				</div>
+			}
+			@problemStatePanel(v)
+		</article>
+		<aside id="solutions" class="min-w-0 lg:sticky lg:top-[4.75rem] lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pb-6 lg:pr-1" aria-label="Solutions">
+			@solutionsColumn(v)
+		</aside>
+	</div>
+}
+
+// ProblemPreview is the explorer's right-hand pane: the problem in brief,
+// its solution map and top solutions, and a link to the full page.
+templ ProblemPreview(v ProblemPageView) {
+	<article class="card overflow-hidden" data-problem-id={ v.ID }>
+		<div class="p-6 pb-2">
+			@problemHeader(v, false)
+		</div>
+		<div class="px-6">
+			@problemGlance(v)
+		</div>
+		<div class="mt-6 border-t border-stone-200 bg-stone-50/60 px-6 py-5">
+			<div class="flex items-center justify-between">
+				<h3 class="text-sm font-semibold">
+					Solutions <span class="ml-1 rounded-full bg-stone-200 px-1.5 text-xs text-stone-600">{ strconv.Itoa(len(v.Solutions)) }</span>
+				</h3>
+				<a href={ templ.SafeURL("/p/" + v.ID + "#solutions") } class="text-sm font-medium text-accent hover:underline">
+					if len(v.Solutions) == 0 {
+						Propose one →
+					} else {
+						See all & discuss →
+					}
+				</a>
+			</div>
+			if len(v.Solutions) == 0 {
+				<p class="mt-2 text-sm text-stone-500">No solutions yet. A good first answer is often “change the process” — no software needed.</p>
+			} else {
+				<div class={ "mt-3 grid gap-4", templ.KV("xl:grid-cols-[240px_minmax(0,1fr)]", len(v.Solutions) > 2) }>
+					if len(v.Solutions) > 2 {
+						<div class="hidden xl:block">
+							@partials.SolutionMapGraph(partials.SolutionMap(v.Solutions))
+						</div>
+					}
+					<ul class="space-y-2">
+						for i, s := range v.Solutions {
+							if i < 3 {
+								<li class={ "kind-" + s.Kind, "flex items-start gap-3 rounded-lg border border-stone-200 bg-white p-3" }>
+									<span class="mt-1.5 kind-dot shrink-0"></span>
+									<div class="min-w-0 flex-1">
+										<p class="flex items-center gap-2 text-xs">
+											<span class="font-semibold" style="color: var(--k)">{ partials.SolutionKindLabel(s.Kind) }</span>
+											<span class="tabular-nums text-stone-500">▲ { strconv.Itoa(int(s.Vote.Count)) }</span>
+										</p>
+										<p class="clamp-2 mt-0.5 text-sm text-stone-700">{ partials.Excerpt(s.Body, 200) }</p>
+									</div>
+								</li>
+							}
+						}
+					</ul>
+				</div>
 			}
 		</div>
-		if v.CanWrite {
-			<div class="mt-8">
-				<h3 class="text-lg font-semibold">Post a solution</h3>
-				<div class="mt-3">
-					@partials.SolutionForm(v.SolutionForm)
-				</div>
-			</div>
-		} else if !v.SignedIn && v.State != "invalid" {
-			<p class="mt-6 text-sm"><a href={ templ.SafeURL("/signin?next=/p/" + v.ID) } class="underline">Sign in</a> to post a solution.</p>
+		<div class="flex flex-wrap items-center gap-3 border-t border-stone-200 px-6 py-3">
+			@partials.ProblemInterest(v.Interest)
+			<a href={ templ.SafeURL("/p/" + v.ID) } class="btn ml-auto">Open problem</a>
+		</div>
+	</article>
+}
+
+// problemHeader: chips, vote + title, byline.
+templ problemHeader(v ProblemPageView, page bool) {
+	if v.State == "invalid" {
+		<div class="mb-4 flex gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-700">
+			This problem was marked invalid. It stays visible for the record but can no longer be changed, voted on or answered.
+		</div>
+	}
+	<div class="flex flex-wrap items-center gap-1.5">
+		<a href={ templ.SafeURL("/problems?domain=" + v.DomainSlug) } class="chip hover:border-stone-300">{ v.DomainName }</a>
+		<span class={ partials.StateChip(v.State) }>{ partials.ProblemStateLabel(v.State) }</span>
+		if v.SoftSolved {
+			<span class="chip chip-solved" title="The top solution has enough votes">soft-solved</span>
+		}
+		if v.OnMetaBoard {
+			<a href="/meta" class="chip">meta</a>
+		}
+	</div>
+	<div class="mt-3 flex items-start gap-4">
+		@partials.VoteButton(v.Vote)
+		<div class="min-w-0">
+			if page {
+				<h1 class="text-2xl font-semibold leading-tight tracking-tight text-stone-900 sm:text-[28px]">{ v.Title }</h1>
+			} else {
+				<h2 class="text-xl font-semibold leading-snug tracking-tight text-stone-900 sm:text-2xl"><a href={ templ.SafeURL("/p/" + v.ID) } class="hover:text-accent">{ v.Title }</a></h2>
+			}
+			<p class="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-sm text-stone-500">
+				<span>Posted by</span>
+				@views.Author(v.Poster, auth.UserFrom(ctx))
+				<span>· { v.PostedAt }</span>
+				if v.IsRevised {
+					<span>· current version by</span>
+					@views.Author(v.RevisionAuthor, auth.UserFrom(ctx))
+				}
+			</p>
+		</div>
+	</div>
+}
+
+// problemBody: the pain as a highlighted one-liner, the process as a step
+// flow (first maxSteps shown when maxSteps > 0, else 6 with the rest behind
+// a toggle), and what's been tried as a compact list.
+templ problemBody(v ProblemPageView, maxSteps int) {
+	{{ steps := partials.Steps(v.CurrentProcess) }}
+	{{ tried := partials.Steps(v.Tried) }}
+	{{ fold := 6 }}
+	if maxSteps > 0 {
+		{{ fold = maxSteps }}
+	}
+	<section class="mt-5 rounded-xl border border-amber-500/25 bg-amber-500/8 p-4">
+		<h2 class="kicker !text-amber-700 dark:!text-amber-400">What goes wrong</h2>
+		<p id={ "pain-" + v.ID } data-clamp class="clamp-3 mt-1.5 whitespace-pre-line text-[15px] font-medium leading-relaxed text-stone-800">{ v.Pain }</p>
+		<button type="button" data-toggle={ "pain-" + v.ID } class="mt-1 text-xs font-medium text-amber-700 hover:underline dark:text-amber-400">Show more</button>
+	</section>
+	<section class="mt-6">
+		<div class="flex items-baseline justify-between">
+			<h2 class="kicker">How it's done today</h2>
+			<span class="text-xs text-stone-400">{ strconv.Itoa(len(steps)) } steps</span>
+		</div>
+		<ol id={ "flow-" + v.ID } class="flow mt-3">
+			for i, st := range steps {
+				<li class={ templ.KV("flow-hidden", i >= fold) }>
+					<p class="pt-1 text-[15px] leading-relaxed text-stone-700">{ st }</p>
+				</li>
+			}
+		</ol>
+		if len(steps) > fold {
+			if maxSteps > 0 {
+				<a href={ templ.SafeURL("/p/" + v.ID) } class="ml-10 text-sm font-medium text-accent hover:underline">+{ strconv.Itoa(len(steps) - fold) } more steps</a>
+			} else {
+				<button type="button" data-toggle={ "flow-" + v.ID } data-more={ "Show all " + strconv.Itoa(len(steps)) + " steps" } data-less="Show fewer steps" class="ml-10 text-sm font-medium text-accent hover:underline">Show all { strconv.Itoa(len(steps)) } steps</button>
+			}
+		}
+	</section>
+	<section class="mt-4">
+		<h2 class="kicker">Already tried</h2>
+		if len(tried) == 0 {
+			<p class="mt-1.5 text-sm text-stone-500">Nothing yet.</p>
+		} else {
+			<ul class="mt-2 flex flex-wrap gap-2">
+				for i, t := range tried {
+					if maxSteps == 0 || i < 3 {
+						<li class="inline-flex max-w-full items-start gap-1.5 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-sm text-stone-700">
+							<svg class="mt-0.5 size-3.5 shrink-0 text-stone-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 8 8M14 6l-8 8" stroke-linecap="round"></path></svg>
+							<span class="clamp-2">{ t }</span>
+						</li>
+					}
+				}
+			</ul>
 		}
 	</section>
 }
 
+// problemGlance is the preview's short form: the pain in two lines, the
+// process as a horizontal map of short step labels, and a count of what's
+// been tried.
+templ problemGlance(v ProblemPageView) {
+	{{ steps := partials.Steps(v.CurrentProcess) }}
+	{{ tried := partials.Steps(v.Tried) }}
+	<p class="clamp-2 mt-4 border-l-[3px] border-amber-400 pl-3 text-[15px] font-medium leading-relaxed text-stone-800" title={ v.Pain }>{ v.Pain }</p>
+	<div class="mt-5">
+		<div class="flex items-baseline justify-between">
+			<h3 class="kicker">Today's process</h3>
+			<a href={ templ.SafeURL("/p/" + v.ID) } class="text-xs text-stone-400 hover:text-stone-700">{ strconv.Itoa(len(steps)) } steps · full detail →</a>
+		</div>
+		<ol class="mt-2 grid gap-2 text-sm sm:grid-cols-2 xl:grid-cols-3" aria-label="Process steps">
+			for i, st := range steps {
+				if i < 6 {
+					<li class="relative flex items-start gap-2 rounded-lg border border-stone-200 bg-stone-50 p-2.5" title={ st }>
+						<span class="grid size-5 shrink-0 place-items-center rounded-md bg-accent text-[11px] font-semibold text-white">{ strconv.Itoa(i + 1) }</span>
+						<span class="clamp-2 leading-snug text-stone-700">{ partials.StepLabel(st) }</span>
+					</li>
+				}
+			}
+		</ol>
+		if len(steps) > 6 {
+			<p class="mt-1.5 text-xs text-stone-500">+{ strconv.Itoa(len(steps) - 6) } more steps</p>
+		}
+	</div>
+	if len(tried) > 0 {
+		<p class="mt-4 flex items-start gap-2 text-sm text-stone-500">
+			<span class="kicker mt-0.5 shrink-0">Tried</span>
+			<span class="clamp-2">{ strings.Join(tried, " · ") }</span>
+		</p>
+	}
+}
+
+// solutionsColumn is the right-hand column of the problem page.
+templ solutionsColumn(v ProblemPageView) {
+	<div class="flex items-center justify-between">
+		<h2 class="text-lg font-semibold tracking-tight">
+			Solutions <span class="ml-1 rounded-full bg-stone-200 px-2 py-0.5 text-xs font-medium text-stone-600">{ strconv.Itoa(len(v.Solutions)) }</span>
+		</h2>
+		if v.CanWrite {
+			<a href="#post-solution-panel" class="btn" onclick="document.getElementById('post-solution-panel').open=true">
+				<svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z"></path></svg>
+				Propose
+			</a>
+		}
+	</div>
+	if len(v.Solutions) > 2 {
+		<div class="card mt-4 p-3">
+			@partials.SolutionMapGraph(partials.SolutionMap(v.Solutions))
+		</div>
+	}
+	if v.CanWrite {
+		<details id="post-solution-panel" class="card mt-4 p-4" open?={ len(v.Solutions) == 0 || len(v.SolutionForm.Errors) > 0 }>
+			<summary class="cursor-pointer list-none text-sm font-semibold [&::-webkit-details-marker]:hidden">
+				Post a solution
+				<span class="block text-xs font-normal text-stone-500">Describe it so someone could do it tomorrow.</span>
+			</summary>
+			<div class="mt-3">
+				@partials.SolutionForm(v.SolutionForm)
+			</div>
+		</details>
+	}
+	if len(v.Solutions) == 0 {
+		<div class="mt-4 rounded-xl border border-dashed border-stone-300 px-5 py-8 text-center">
+			<p class="font-medium text-stone-700">No solutions yet.</p>
+			<p class="mt-1 text-sm text-stone-500">The best answer is often a process change, not new software.</p>
+			if !v.SignedIn && v.State != "invalid" {
+				<a href={ templ.SafeURL("/signin?next=/p/" + v.ID) } class="btn mt-4">Sign in to post a solution</a>
+			}
+		</div>
+	} else {
+		<div class="mt-4 space-y-3">
+			for _, s := range v.Solutions {
+				@partials.SolutionCard(s)
+			}
+		</div>
+		if !v.SignedIn && v.State != "invalid" {
+			<p class="mt-4 text-sm text-stone-500"><a href={ templ.SafeURL("/signin?next=/p/" + v.ID) } class="font-medium text-accent hover:underline">Sign in</a> to post a solution.</p>
+		}
+	}
+}
+
+func showStatePanel(v ProblemPageView) bool {
+	c := v.Community
+	return len(v.History) > 0 || (v.ViewerIsPoster && v.CanWrite) || c.SolvedPercent > 0 || c.InvalidPercent > 0 ||
+		(v.CanWrite && !v.ViewerIsPoster && (c.CanVoteSolved || c.CanVoteInvalid || c.VotedSolved || c.VotedInvalid || v.State == "open"))
+}
+
 templ problemStatePanel(v ProblemPageView) {
-	<section class="mt-8 rounded border border-stone-200 bg-white p-4 text-sm" id="state">
-		<h2 class="font-semibold">Status: { partials.ProblemStateLabel(v.State) }</h2>
+	if showStatePanel(v) {
+		@problemStateCard(v)
+	}
+}
+
+templ problemStateCard(v ProblemPageView) {
+	<section class="card mt-6 p-4 text-sm" id="state">
+		<h2 class="flex items-center gap-2 font-semibold">Status <span class={ partials.StateChip(v.State) }>{ partials.ProblemStateLabel(v.State) }</span></h2>
 		if len(v.History) > 0 {
 			<ol class="mt-2 space-y-1 text-stone-600">
 				for _, e := range v.History {

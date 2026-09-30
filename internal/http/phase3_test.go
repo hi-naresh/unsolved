@@ -146,7 +146,7 @@ func TestPhase3SolvedPrompt(t *testing.T) {
 		t.Fatalf("event actor %v reason %q", actor, reason)
 	}
 	b = mustStatus(t, app.anon(t).get("/p/"+pid), http.StatusOK)
-	if !strings.Contains(b, "Status: Solved") || !strings.Contains(b, "Poster confirmed via email") {
+	if !strings.Contains(b, `chip chip-solved">Solved</span>`) || !strings.Contains(b, "Poster confirmed via email") {
 		t.Fatal("problem page does not show the solved state and reason")
 	}
 	// Tapping again is harmless.

@@ -95,10 +95,10 @@
   /* chips */
   .chip { @apply inline-flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 text-[11px] font-medium text-stone-600; }
   .chip-accent { @apply border-transparent bg-accent-soft text-accent-ink; }
-  .chip-open { @apply border-transparent bg-sky-500/10 text-sky-700; }
-  .chip-solved { @apply border-transparent bg-emerald-500/12 text-emerald-700; }
-  .chip-invalid { @apply border-transparent bg-red-500/10 text-red-700; }
-  .chip-pinned { @apply border-transparent bg-amber-500/15 text-amber-800; }
+  .chip-open { @apply border-transparent bg-sky-500/10 text-sky-700 dark:text-sky-300; }
+  .chip-solved { @apply border-transparent bg-emerald-500/12 text-emerald-700 dark:text-emerald-300; }
+  .chip-invalid { @apply border-transparent bg-red-500/10 text-red-700 dark:text-red-300; }
+  .chip-pinned { @apply border-transparent bg-amber-500/15 text-amber-800 dark:text-amber-300; }
 
   /* solution kinds: one hue each, used by chips, map nodes and card rails */
   .kind-process_change { --k: #0ea5e9; }

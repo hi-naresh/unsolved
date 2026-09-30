@@ -6,71 +6,151 @@ import (
 	"strconv"
 )
 
-// SolutionCard is one solution on the problem page: kind, current revision,
-// author, vote, "tried it" outcomes and form, and the inline revision form.
+// SolutionCard is one solution: kind, current revision (clamped), author,
+// vote, a "tried it" outcome bar, and inline try/revise actions.
 templ SolutionCard(s SolutionView) {
-	<article class="rounded border border-stone-200 bg-white p-4" id={ "s-" + s.ID }>
+	<article class={ "card kind-rail kind-" + s.Kind, "scroll-mt-24 p-4" } id={ "s-" + s.ID }>
 		<div class="flex items-start gap-3">
 			@VoteButton(s.Vote)
 			<div class="min-w-0 flex-1">
-				<div class="flex flex-wrap items-center gap-x-2 text-xs text-stone-500">
-					<span class="rounded bg-stone-100 px-1.5 py-0.5 font-medium text-stone-700">{ SolutionKindLabel(s.Kind) }</span>
-					@views.Author(s.Author, auth.UserFrom(ctx))
+				<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-stone-500">
+					<span class="kind-chip"><span class="kind-dot"></span>{ SolutionKindLabel(s.Kind) }</span>
+					<span class="inline-flex items-center gap-1">
+						@views.Author(s.Author, auth.UserFrom(ctx))
+					</span>
 					if s.IsRevised {
 						<span>· revised</span>
 					}
 					if auth.UserFrom(ctx) != nil {
-						<span class="flex-1"></span>
-						@ReportLink("solution_revision", s.RevisionID)
+						<span class="ml-auto">
+							@ReportLink("solution_revision", s.RevisionID)
+						</span>
 					}
 				</div>
-				<div class="mt-2 whitespace-pre-line text-stone-800">{ s.Body }</div>
-				<p class="mt-3 text-sm text-stone-600">
-					Tried it:
-					<span class="tabular-nums">{ strconv.FormatInt(s.Worked, 10) } worked</span> ·
-					<span class="tabular-nums">{ strconv.FormatInt(s.Partly, 10) } partly</span> ·
-					<span class="tabular-nums">{ strconv.FormatInt(s.Failed, 10) } didn't work</span>
-				</p>
+				<p id={ "sb-" + s.ID } data-clamp class="clamp-5 mt-2 whitespace-pre-line text-sm leading-relaxed text-stone-700">{ s.Body }</p>
+				<button type="button" data-toggle={ "sb-" + s.ID } class="mt-1 text-xs font-medium text-accent hover:underline">Show more</button>
+				@outcomeBar(s)
 				if len(s.Notes) > 0 {
-					<ul class="mt-2 space-y-1 text-sm text-stone-600">
-						for _, n := range s.Notes {
-							<li><span class="font-medium">{ OutcomeLabel(n.Outcome) }:</span> { n.Note }</li>
+					<ul class="mt-2 space-y-1 text-xs text-stone-600">
+						for i, n := range s.Notes {
+							if i < 2 {
+								<li class="flex gap-1.5">
+									@outcomeDot(n.Outcome)
+									<span class="clamp-2">{ n.Note }</span>
+								</li>
+							}
 						}
 					</ul>
 				}
 				if s.CanWrite {
-					<details class="mt-3 text-sm">
-						<summary class="cursor-pointer text-stone-600 hover:underline">
-							if s.ViewerOutcome != "" {
-								You tried it ({ OutcomeLabel(s.ViewerOutcome) }) · change
-							} else {
-								I tried it
-							}
-						</summary>
-						<form method="post" action={ templ.SafeURL("/s/" + s.ID + "/tried") } class="mt-2 space-y-2">
-							<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
-							<fieldset class="flex flex-wrap gap-4">
-								<legend class="sr-only">Outcome</legend>
-								for _, o := range []string{"worked", "partly", "failed"} {
-									<label class="inline-flex items-center gap-1.5">
-										<input type="radio" name="outcome" value={ o } required checked?={ s.ViewerOutcome == o }/>
-										{ OutcomeLabel(o) }
-									</label>
+					<div class="mt-3 flex flex-wrap gap-2">
+						<details class="group/try w-full [&:not([open])]:w-auto">
+							<summary class="btn-ghost -ml-2.5 cursor-pointer list-none text-xs [&::-webkit-details-marker]:hidden">
+								<svg class="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 10.5 8 14.5 16 6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+								if s.ViewerOutcome != "" {
+									You tried it: { OutcomeLabel(s.ViewerOutcome) } · change
+								} else {
+									I tried it
 								}
-							</fieldset>
-							<textarea name="note" rows="2" maxlength="1000" class="field" placeholder="What happened? (optional)"></textarea>
-							<button type="submit" class="btn">Save outcome</button>
-						</form>
-					</details>
-					<details class="mt-2 text-sm">
-						<summary class="cursor-pointer text-stone-600 hover:underline">Suggest a revision</summary>
-						@SolutionReviseForm(SolutionReviseFormView{
-							SolutionID: s.ID, ParentRevisionID: s.RevisionID, Body: s.Body,
-							Handle: s.Handle, Display: s.Display,
-						})
-					</details>
+							</summary>
+							<form method="post" action={ templ.SafeURL("/s/" + s.ID + "/tried") } class="mt-2 space-y-2 rounded-lg bg-stone-50 p-3">
+								<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+								<fieldset class="grid grid-cols-3 gap-1.5">
+									<legend class="sr-only">Outcome</legend>
+									for _, o := range []string{"worked", "partly", "failed"} {
+										<label class="cursor-pointer">
+											<input type="radio" name="outcome" value={ o } required checked?={ s.ViewerOutcome == o } class="peer sr-only"/>
+											<span class="flex items-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-xs font-medium text-stone-600 peer-checked:border-accent peer-checked:text-accent-ink peer-focus-visible:ring-2 peer-focus-visible:ring-accent">
+												@outcomeDot(o)
+												{ OutcomeLabel(o) }
+											</span>
+										</label>
+									}
+								</fieldset>
+								<textarea name="note" rows="2" maxlength="1000" class="field" placeholder="What happened? (optional)"></textarea>
+								<button type="submit" class="btn">Save outcome</button>
+							</form>
+						</details>
+						<details class="w-full [&:not([open])]:w-auto">
+							<summary class="btn-ghost -ml-2.5 cursor-pointer list-none text-xs [&::-webkit-details-marker]:hidden">
+								<svg class="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m12.5 4.5 3 3L7 16H4v-3l8.5-8.5Z" stroke-linejoin="round"></path></svg>
+								Suggest a revision
+							</summary>
+							@SolutionReviseForm(SolutionReviseFormView{
+								SolutionID: s.ID, ParentRevisionID: s.RevisionID, Body: s.Body,
+								Handle: s.Handle, Display: s.Display,
+							})
+						</details>
+					</div>
 				}
 			</div>
 		</div>
 	</article>
+}
+
+templ outcomeDot(o string) {
+	switch o {
+		case "worked":
+			<span class="mt-1 inline-block size-2 shrink-0 rounded-full bg-emerald-500"></span>
+		case "partly":
+			<span class="mt-1 inline-block size-2 shrink-0 rounded-full bg-amber-400"></span>
+		default:
+			<span class="mt-1 inline-block size-2 shrink-0 rounded-full bg-red-400"></span>
+	}
+}
+
+// outcomeBar is "Tried it" as a stacked bar: worked / partly / didn't work.
+templ outcomeBar(s SolutionView) {
+	{{ t := Outcomes(s) }}
+	<div class="mt-3">
+		if t.Total == 0 {
+			<p class="text-xs text-stone-400">No one has reported trying this yet.</p>
+		} else {
+			<div class="flex h-1.5 overflow-hidden rounded-full bg-stone-100" role="img" aria-label={ strconv.FormatInt(t.Worked, 10) + " worked, " + strconv.FormatInt(t.Partly, 10) + " partly, " + strconv.FormatInt(t.Failed, 10) + " didn't work" }>
+				<span class="bg-emerald-500" style={ "width:" + Pct(t.Worked, t.Total) }></span>
+				<span class="bg-amber-400" style={ "width:" + Pct(t.Partly, t.Total) }></span>
+				<span class="bg-red-400" style={ "width:" + Pct(t.Failed, t.Total) }></span>
+			</div>
+			<p class="mt-1.5 flex gap-3 text-[11px] tabular-nums text-stone-500">
+				<span>Tried it:</span>
+				<span><b class="font-semibold text-emerald-600">{ strconv.FormatInt(t.Worked, 10) }</b> worked</span>
+				<span><b class="font-semibold text-amber-600">{ strconv.FormatInt(t.Partly, 10) }</b> partly</span>
+				<span><b class="font-semibold text-red-500">{ strconv.FormatInt(t.Failed, 10) }</b> didn't work</span>
+			</p>
+		}
+	</div>
+}
+
+// SolutionMapGraph draws the problem→solutions map. Each node links to its
+// solution card.
+templ SolutionMapGraph(m SolutionMapView) {
+	<figure class="relative">
+		<svg viewBox={ "0 0 " + F(m.W) + " " + F(m.H) } class="h-auto w-full" role="img" aria-labelledby="smap-title">
+			<title id="smap-title">Solutions map: { strconv.Itoa(len(m.Nodes)) } solutions around the problem, sized by votes</title>
+			<circle cx={ F(m.CX) } cy={ F(m.CY) } r="84" class="fill-none stroke-stone-200" stroke-dasharray="2 5"></circle>
+			for _, n := range m.Nodes {
+				<line x1={ F(m.CX) } y1={ F(m.CY) } x2={ F(n.X) } y2={ F(n.Y) } class={ "kind-" + n.Kind } style="stroke: var(--k); stroke-opacity:.35" stroke-width="1.5"></line>
+			}
+			<circle cx={ F(m.CX) } cy={ F(m.CY) } r="20" class="fill-accent"></circle>
+			<path d={ "M" + F(m.CX-6) + " " + F(m.CY-6) + "v6a6 6 0 0 0 12 0v-6" } stroke="white" stroke-width="2.4" fill="none" stroke-linecap="round"></path>
+			for _, n := range m.Nodes {
+				<a href={ templ.SafeURL("#s-" + n.ID) } class={ "kind-" + n.Kind, "group/node" }>
+					<title>{ NodeTitle(n) }</title>
+					if n.Top {
+						<circle cx={ F(n.X) } cy={ F(n.Y) } r={ F(n.R + 5) } fill="none" style="stroke: var(--k)" stroke-width="1.5" stroke-dasharray="3 3"></circle>
+					}
+					<circle cx={ F(n.X) } cy={ F(n.Y) } r={ F(n.R) } style="fill: var(--k)" class="opacity-90 transition group-hover/node:opacity-100"></circle>
+					<text x={ F(n.X) } y={ F(n.Y + 3.5) } text-anchor="middle" class="pointer-events-none fill-white text-[10px] font-semibold">{ strconv.Itoa(int(n.Votes)) }</text>
+				</a>
+			}
+		</svg>
+		if m.Extra > 0 {
+			<figcaption class="absolute bottom-0 right-0 text-[11px] text-stone-400">+{ strconv.Itoa(m.Extra) } more</figcaption>
+		}
+	</figure>
+	<ul class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-stone-500">
+		for _, k := range SolutionKinds {
+			<li class={ "kind-" + k, "inline-flex items-center gap-1" }><span class="kind-dot"></span>{ SolutionKindLabel(k) }</li>
+		}
+	</ul>
 }

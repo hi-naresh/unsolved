@@ -37,6 +37,8 @@ type ProblemRowView struct {
 	SoftSolved bool
 	Pinned     bool
 	Votes      int32
+	Solutions  int32
+	Excerpt    string // the start of "what goes wrong"
 	Author     views.AuthorRef
 	CreatedAt  time.Time
 }
