@@ -1,9 +1,140 @@
 @import "tailwindcss";
 @source "../../internal/views";
+@import "./forms.css";
+@import "./pages.css";
+
+/* ---------------------------------------------------------------------------
+   Design tokens. The stone ramp and white are remapped for dark mode, so every
+   page gets a dark theme from the same utility classes. Accent is indigo; vote
+   is amber; solved is emerald. Solution kinds each own one hue.
+   ------------------------------------------------------------------------- */
+@theme {
+  --font-sans: "Inter var", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-white: var(--u-white);
+  --color-stone-50: var(--u-stone-50);
+  --color-stone-100: var(--u-stone-100);
+  --color-stone-200: var(--u-stone-200);
+  --color-stone-300: var(--u-stone-300);
+  --color-stone-400: var(--u-stone-400);
+  --color-stone-500: var(--u-stone-500);
+  --color-stone-600: var(--u-stone-600);
+  --color-stone-700: var(--u-stone-700);
+  --color-stone-800: var(--u-stone-800);
+  --color-stone-900: var(--u-stone-900);
+  --color-stone-950: var(--u-stone-950);
+  --color-accent: var(--u-accent);
+  --color-accent-soft: var(--u-accent-soft);
+  --color-accent-ink: var(--u-accent-ink);
+}
+
+:root {
+  color-scheme: light;
+  --u-white: #ffffff;
+  --u-stone-50: #f7f7f5;
+  --u-stone-100: #efefec;
+  --u-stone-200: #e4e3df;
+  --u-stone-300: #d3d1cb;
+  --u-stone-400: #a8a49c;
+  --u-stone-500: #78736b;
+  --u-stone-600: #57534e;
+  --u-stone-700: #44403c;
+  --u-stone-800: #292524;
+  --u-stone-900: #1c1917;
+  --u-stone-950: #0c0a09;
+  --u-accent: #4f46e5;
+  --u-accent-soft: #eef0ff;
+  --u-accent-ink: #3730a3;
+  --u-shadow: 0 1px 2px rgb(28 25 23 / 0.06), 0 1px 1px rgb(28 25 23 / 0.04);
+  --u-shadow-lg: 0 10px 30px -12px rgb(28 25 23 / 0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --u-white: #1a1816;
+    --u-stone-50: #0f0e0d;
+    --u-stone-100: #23201e;
+    --u-stone-200: #2e2b28;
+    --u-stone-300: #45413c;
+    --u-stone-400: #6b665f;
+    --u-stone-500: #9a948b;
+    --u-stone-600: #b9b3aa;
+    --u-stone-700: #d6d1c9;
+    --u-stone-800: #e7e3dc;
+    --u-stone-900: #f3f0ea;
+    --u-stone-950: #faf8f4;
+    --u-accent: #8b93ff;
+    --u-accent-soft: #23244a;
+    --u-accent-ink: #c7cbff;
+    --u-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+    --u-shadow-lg: 0 10px 30px -12px rgb(0 0 0 / 0.7);
+  }
+}
+
+@layer base {
+  html { -webkit-font-smoothing: antialiased; }
+  ::selection { background: var(--u-accent-soft); }
+  :focus-visible { outline: 2px solid var(--u-accent); outline-offset: 2px; border-radius: 6px; }
+}
 
 @layer components {
-  .field { @apply mt-1 block w-full rounded border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none; }
-  .btn { @apply inline-flex items-center rounded bg-stone-900 px-3 py-1.5 text-sm text-white hover:bg-stone-700; }
-  .btn-secondary { @apply inline-flex items-center rounded border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-100; }
-  .error { @apply mt-1 text-sm text-red-700; }
+  /* surfaces */
+  .card { @apply rounded-xl border border-stone-200 bg-white; box-shadow: var(--u-shadow); }
+  .card-hover { @apply transition hover:border-stone-300; }
+  .card-hover:hover { box-shadow: var(--u-shadow-lg); }
+  .kicker { @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500; }
+  .muted { @apply text-stone-500; }
+
+  /* controls */
+  .field { @apply mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 transition focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15; }
+  .btn { @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-accent px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:brightness-110 active:scale-[0.98] disabled:opacity-50; }
+  .btn-secondary { @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-800 transition hover:border-stone-400 hover:bg-stone-50 active:scale-[0.98]; }
+  .btn-ghost { @apply inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-900; }
+  .error { @apply mt-1 text-sm text-red-600; }
+
+  /* chips */
+  .chip { @apply inline-flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 text-[11px] font-medium text-stone-600; }
+  .chip-accent { @apply border-transparent bg-accent-soft text-accent-ink; }
+  .chip-open { @apply border-transparent bg-sky-500/10 text-sky-700; }
+  .chip-solved { @apply border-transparent bg-emerald-500/12 text-emerald-700; }
+  .chip-invalid { @apply border-transparent bg-red-500/10 text-red-700; }
+  .chip-pinned { @apply border-transparent bg-amber-500/15 text-amber-800; }
+
+  /* solution kinds: one hue each, used by chips, map nodes and card rails */
+  .kind-process_change { --k: #0ea5e9; }
+  .kind-off_the_shelf { --k: #8b5cf6; }
+  .kind-custom_software { --k: #f59e0b; }
+  .kind-dont_automate { --k: #10b981; }
+  .kind-chip { @apply inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold; color: var(--k); background: color-mix(in srgb, var(--k) 12%, transparent); }
+  .kind-dot { @apply inline-block size-2 rounded-full; background: var(--k); }
+  .kind-rail { border-left: 3px solid var(--k); }
+
+  /* segmented tabs */
+  .seg { @apply inline-flex rounded-lg bg-stone-100 p-0.5 text-sm; }
+  .seg > a { @apply rounded-md px-3 py-1 font-medium text-stone-500 transition hover:text-stone-900; }
+  .seg > a[aria-current="page"] { @apply bg-white text-stone-900 shadow-sm; }
+
+  /* long text clamps with a "more" toggle (static/js/app.js) */
+  .clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+  .clamp-2 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  .clamp-5 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden; }
+  [data-clamp].open { -webkit-line-clamp: unset; display: block; }
+
+  /* problem list cards in the explorer */
+  .pcard { @apply block rounded-xl border border-transparent px-3.5 py-3 transition hover:border-stone-200 hover:bg-white; }
+  .pcard[aria-current="true"] { @apply border-accent/40 bg-white; box-shadow: 0 0 0 3px color-mix(in srgb, var(--u-accent) 12%, transparent); }
+
+  /* process flow steps */
+  .flow { counter-reset: step; }
+  .flow > li { counter-increment: step; @apply relative pb-4 pl-10; }
+  .flow > li::before { content: counter(step); @apply absolute left-0 top-0 grid size-7 place-items-center rounded-full border border-stone-300 bg-white text-xs font-semibold text-stone-600; }
+  .flow > li:not(:last-child)::after { content: ""; @apply absolute bottom-0 left-[13.5px] top-7 w-px bg-stone-300; }
+  .flow > li.flow-hidden { display: none; }
+  .flow.open > li.flow-hidden { display: list-item; }
+
+  /* evolution graph: highlight the card a node links to */
+  .rev-card:target { @apply ring-2 ring-accent; }
+
+  /* htmx loading affordance for the preview pane */
+  #pane.htmx-request { opacity: .55; transition: opacity .15s; }
 }

@@ -240,7 +240,9 @@ const listFrontPage = `-- name: ListFrontPage :many
 SELECT p.id, p.score, p.created_at, p.state, p.soft_solved, p.is_seed,
        d.slug AS domain_slug, d.name AS domain_name, r.title, r.vote_count,
        p.author_display, u.handle AS author_handle, (u.deleted_at IS NOT NULL)::bool AS author_deleted,
-       COALESCE(st.tier::text, 'member')::text AS author_tier
+       COALESCE(st.tier::text, 'member')::text AS author_tier,
+       left(r.pain, 220)::text AS pain_excerpt,
+       (SELECT count(*) FROM solutions so WHERE so.problem_id = p.id)::int4 AS solution_count
 FROM problems p
 JOIN domains d ON d.id = p.domain_id
 JOIN problem_revisions r ON r.id = p.current_revision_id
@@ -276,6 +278,8 @@ type ListFrontPageRow struct {
 	AuthorHandle  string
 	AuthorDeleted bool
 	AuthorTier    string
+	PainExcerpt   string
+	SolutionCount int32
 }
 
 func (q *Queries) ListFrontPage(ctx context.Context, arg ListFrontPageParams) ([]ListFrontPageRow, error) {
@@ -308,6 +312,8 @@ func (q *Queries) ListFrontPage(ctx context.Context, arg ListFrontPageParams) ([
 			&i.AuthorHandle,
 			&i.AuthorDeleted,
 			&i.AuthorTier,
+			&i.PainExcerpt,
+			&i.SolutionCount,
 		); err != nil {
 			return nil, err
 		}
@@ -323,7 +329,9 @@ const listMetaBoard = `-- name: ListMetaBoard :many
 SELECT p.id, p.score, p.created_at, p.state, p.soft_solved, p.is_seed,
        d.slug AS domain_slug, d.name AS domain_name, r.title, r.vote_count,
        p.author_display, u.handle AS author_handle, (u.deleted_at IS NOT NULL)::bool AS author_deleted,
-       COALESCE(st.tier::text, 'member')::text AS author_tier
+       COALESCE(st.tier::text, 'member')::text AS author_tier,
+       left(r.pain, 220)::text AS pain_excerpt,
+       (SELECT count(*) FROM solutions so WHERE so.problem_id = p.id)::int4 AS solution_count
 FROM problems p
 JOIN domains d ON d.id = p.domain_id
 JOIN problem_revisions r ON r.id = p.current_revision_id
@@ -357,6 +365,8 @@ type ListMetaBoardRow struct {
 	AuthorHandle  string
 	AuthorDeleted bool
 	AuthorTier    string
+	PainExcerpt   string
+	SolutionCount int32
 }
 
 func (q *Queries) ListMetaBoard(ctx context.Context, arg ListMetaBoardParams) ([]ListMetaBoardRow, error) {
@@ -388,6 +398,8 @@ func (q *Queries) ListMetaBoard(ctx context.Context, arg ListMetaBoardParams) ([
 			&i.AuthorHandle,
 			&i.AuthorDeleted,
 			&i.AuthorTier,
+			&i.PainExcerpt,
+			&i.SolutionCount,
 		); err != nil {
 			return nil, err
 		}
@@ -403,7 +415,9 @@ const listPinnedSeedProblems = `-- name: ListPinnedSeedProblems :many
 SELECT p.id, p.score, p.created_at, p.state, p.soft_solved, p.is_seed,
        d.slug AS domain_slug, d.name AS domain_name, r.title, r.vote_count,
        p.author_display, u.handle AS author_handle, (u.deleted_at IS NOT NULL)::bool AS author_deleted,
-       COALESCE(st.tier::text, 'member')::text AS author_tier
+       COALESCE(st.tier::text, 'member')::text AS author_tier,
+       left(r.pain, 220)::text AS pain_excerpt,
+       (SELECT count(*) FROM solutions so WHERE so.problem_id = p.id)::int4 AS solution_count
 FROM problems p
 JOIN domains d ON d.id = p.domain_id
 JOIN problem_revisions r ON r.id = p.current_revision_id
@@ -429,6 +443,8 @@ type ListPinnedSeedProblemsRow struct {
 	AuthorHandle  string
 	AuthorDeleted bool
 	AuthorTier    string
+	PainExcerpt   string
+	SolutionCount int32
 }
 
 func (q *Queries) ListPinnedSeedProblems(ctx context.Context) ([]ListPinnedSeedProblemsRow, error) {
@@ -455,6 +471,8 @@ func (q *Queries) ListPinnedSeedProblems(ctx context.Context) ([]ListPinnedSeedP
 			&i.AuthorHandle,
 			&i.AuthorDeleted,
 			&i.AuthorTier,
+			&i.PainExcerpt,
+			&i.SolutionCount,
 		); err != nil {
 			return nil, err
 		}
@@ -470,7 +488,9 @@ const listProblemsNew = `-- name: ListProblemsNew :many
 SELECT p.id, p.score, p.created_at, p.state, p.soft_solved, p.is_seed,
        d.slug AS domain_slug, d.name AS domain_name, r.title, r.vote_count,
        p.author_display, u.handle AS author_handle, (u.deleted_at IS NOT NULL)::bool AS author_deleted,
-       COALESCE(st.tier::text, 'member')::text AS author_tier
+       COALESCE(st.tier::text, 'member')::text AS author_tier,
+       left(r.pain, 220)::text AS pain_excerpt,
+       (SELECT count(*) FROM solutions so WHERE so.problem_id = p.id)::int4 AS solution_count
 FROM problems p
 JOIN domains d ON d.id = p.domain_id
 JOIN problem_revisions r ON r.id = p.current_revision_id
@@ -508,6 +528,8 @@ type ListProblemsNewRow struct {
 	AuthorHandle  string
 	AuthorDeleted bool
 	AuthorTier    string
+	PainExcerpt   string
+	SolutionCount int32
 }
 
 func (q *Queries) ListProblemsNew(ctx context.Context, arg ListProblemsNewParams) ([]ListProblemsNewRow, error) {
@@ -541,6 +563,8 @@ func (q *Queries) ListProblemsNew(ctx context.Context, arg ListProblemsNewParams
 			&i.AuthorHandle,
 			&i.AuthorDeleted,
 			&i.AuthorTier,
+			&i.PainExcerpt,
+			&i.SolutionCount,
 		); err != nil {
 			return nil, err
 		}
@@ -556,7 +580,9 @@ const listProblemsTop = `-- name: ListProblemsTop :many
 SELECT p.id, p.score, p.created_at, p.state, p.soft_solved, p.is_seed,
        d.slug AS domain_slug, d.name AS domain_name, r.title, r.vote_count,
        p.author_display, u.handle AS author_handle, (u.deleted_at IS NOT NULL)::bool AS author_deleted,
-       COALESCE(st.tier::text, 'member')::text AS author_tier
+       COALESCE(st.tier::text, 'member')::text AS author_tier,
+       left(r.pain, 220)::text AS pain_excerpt,
+       (SELECT count(*) FROM solutions so WHERE so.problem_id = p.id)::int4 AS solution_count
 FROM problems p
 JOIN domains d ON d.id = p.domain_id
 JOIN problem_revisions r ON r.id = p.current_revision_id
@@ -594,6 +620,8 @@ type ListProblemsTopRow struct {
 	AuthorHandle  string
 	AuthorDeleted bool
 	AuthorTier    string
+	PainExcerpt   string
+	SolutionCount int32
 }
 
 func (q *Queries) ListProblemsTop(ctx context.Context, arg ListProblemsTopParams) ([]ListProblemsTopRow, error) {
@@ -627,6 +655,8 @@ func (q *Queries) ListProblemsTop(ctx context.Context, arg ListProblemsTopParams
 			&i.AuthorHandle,
 			&i.AuthorDeleted,
 			&i.AuthorTier,
+			&i.PainExcerpt,
+			&i.SolutionCount,
 		); err != nil {
 			return nil, err
 		}
