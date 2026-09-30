@@ -22,52 +22,96 @@ type OutcomeConfirmView struct {
 
 var outcomeChoices = []string{"worked", "partly", "failed"}
 
+func outcomeHint(o string) string {
+	switch o {
+	case "worked":
+		return "The problem is gone"
+	case "partly":
+		return "Better, but not fixed"
+	case "failed":
+		return "No real change"
+	}
+	return ""
+}
+
+templ outcomeIcon(o string) {
+	<span class="outcome-icon" aria-hidden="true">
+		switch o {
+			case "worked":
+				<svg class="size-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m4.5 10.5 3.5 3.5 7.5-8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+			case "partly":
+				<svg class="size-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="6.5"></circle><path d="M10 3.5a6.5 6.5 0 0 1 0 13Z" fill="currentColor"></path></svg>
+			default:
+				<svg class="size-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5.5 5.5 9 9M14.5 5.5l-9 9" stroke-linecap="round"></path></svg>
+		}
+	</span>
+}
+
+templ outcomeText(o string) {
+	<span class="outcome-text">
+		<span class="text-base font-semibold text-stone-900">{ partials.OutcomeLabel(o) }</span>
+		<span class="text-xs text-stone-500">{ outcomeHint(o) }</span>
+	</span>
+}
+
 templ OutcomeConfirm(v OutcomeConfirmView) {
 	@layouts.Base("Did it work?") {
-		<h1 class="text-2xl font-semibold">Did it work?</h1>
-		<p class="mt-2 text-stone-700">
-			A solution to your problem
-			<a href={ templ.SafeURL("/p/" + v.ProblemID) } class="font-medium underline">{ v.Title }</a>
-			has enough votes to count as solved.
-		</p>
-		<section class="mt-6 rounded border border-stone-200 bg-white p-4">
-			<p class="text-sm text-stone-500">{ partials.SolutionKindLabel(v.Kind) }</p>
-			<p class="mt-2 whitespace-pre-line">{ v.Body }</p>
-		</section>
-		if v.PosterOutcome != "" {
-			<p class="mt-4 text-sm text-stone-600">
-				You already said: { partials.OutcomeLabel(v.PosterOutcome) }. Confirming again replaces it.
+		<div class="mx-auto max-w-xl sm:pt-4">
+			<p class="kicker">Quick check</p>
+			<h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Did it work?</h1>
+			<p class="mt-2 text-[15px] leading-relaxed text-stone-600">
+				A solution to your problem
+				<a href={ templ.SafeURL("/p/" + v.ProblemID) } class="font-medium text-stone-900 underline decoration-stone-300 underline-offset-2 hover:decoration-stone-500">{ v.Title }</a>
+				has enough votes to count as solved.
 			</p>
-		}
-		<form method="post" action={ templ.SafeURL("/solved/" + v.Token) } class="mt-6">
-			<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
-			if v.Outcome != "" {
-				<input type="hidden" name="outcome" value={ v.Outcome }/>
-				<button type="submit" class="rounded bg-stone-900 px-4 py-2 text-white hover:bg-stone-700">
-					Confirm: { partials.OutcomeLabel(v.Outcome) }
-				</button>
-				if v.Outcome == "worked" && !v.Solved {
-					<p class="mt-2 text-sm text-stone-600">This also marks your problem solved.</p>
-				}
-			} else {
-				<div class="flex flex-wrap gap-2">
-					for _, o := range outcomeChoices {
-						<button type="submit" name="outcome" value={ o } class="rounded bg-stone-900 px-4 py-2 text-white hover:bg-stone-700">
-							{ partials.OutcomeLabel(o) }
-						</button>
-					}
-				</div>
+			<section class={ "card kind-rail mt-5 p-4", "kind-" + v.Kind }>
+				<span class="kind-chip"><span class="kind-dot"></span>{ partials.SolutionKindLabel(v.Kind) }</span>
+				<p id="outcome-body" data-clamp class="clamp-5 mt-2.5 whitespace-pre-line text-sm leading-relaxed text-stone-700">{ v.Body }</p>
+				<button type="button" class="mt-1 text-xs font-medium text-accent hover:underline" data-toggle="outcome-body">Show more</button>
+			</section>
+			if v.PosterOutcome != "" {
+				<p class="note note-info mt-4">
+					<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="7.5"></circle><path d="M10 9v4.5M10 6.3v.2" stroke-linecap="round"></path></svg>
+					<span>You already said: { partials.OutcomeLabel(v.PosterOutcome) }. Confirming again replaces it.</span>
+				</p>
 			}
-		</form>
-		if v.Outcome != "" {
-			<p class="mt-6 text-sm text-stone-600">
-				Not what you meant?
-				for _, o := range outcomeChoices {
-					if o != v.Outcome {
-						<a href={ templ.SafeURL("/solved/" + v.Token + "?outcome=" + o) } class="ml-2 underline">{ partials.OutcomeLabel(o) }</a>
+			<form method="post" action={ templ.SafeURL("/solved/" + v.Token) } class="mt-6">
+				<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+				if v.Outcome != "" {
+					<input type="hidden" name="outcome" value={ v.Outcome }/>
+					<div class="grid gap-2 sm:grid-cols-3 sm:gap-3">
+						for _, o := range outcomeChoices {
+							if o == v.Outcome {
+								<div class={ "outcome", "o-" + o } aria-current="true">
+									@outcomeIcon(o)
+									@outcomeText(o)
+								</div>
+							} else {
+								<a href={ templ.SafeURL("/solved/" + v.Token + "?outcome=" + o) } class={ "outcome opacity-70 hover:opacity-100", "o-" + o }>
+									@outcomeIcon(o)
+									@outcomeText(o)
+								</a>
+							}
+						}
+					</div>
+					<button type="submit" class="btn mt-4 w-full py-3 text-[15px]">
+						Confirm: { partials.OutcomeLabel(v.Outcome) }
+					</button>
+					if v.Outcome == "worked" && !v.Solved {
+						<p class="mt-2 text-center text-sm text-stone-500">This also marks your problem solved.</p>
 					}
+				} else {
+					<p class="mb-3 text-sm font-medium text-stone-700">Tap one — it takes a second.</p>
+					<div class="grid gap-2 sm:grid-cols-3 sm:gap-3">
+						for _, o := range outcomeChoices {
+							<button type="submit" name="outcome" value={ o } class={ "outcome", "o-" + o }>
+								@outcomeIcon(o)
+								@outcomeText(o)
+							</button>
+						}
+					</div>
 				}
-			</p>
-		}
+			</form>
+		</div>
 	}
 }

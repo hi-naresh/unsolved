@@ -15,22 +15,23 @@ type SolutionReviseFormView struct {
 }
 
 templ SolutionReviseForm(f SolutionReviseFormView) {
-	<form method="post" action={ templ.SafeURL("/s/" + f.SolutionID + "/revisions") } class="mt-2 space-y-2">
+	<form method="post" action={ templ.SafeURL("/s/" + f.SolutionID + "/revisions") } class="mt-3 space-y-4">
 		<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
 		<input type="hidden" name="parent_revision_id" value={ f.ParentRevisionID }/>
-		<label class="block">
-			<span class="text-stone-700">Revised solution</span>
-			<textarea name="body" rows="6" required minlength="50" maxlength="8000" class="field">{ f.Body }</textarea>
-			@ProblemFieldError(f.Errors, "body")
-		</label>
-		<label class="block">
-			<span class="text-stone-700">Why this change?</span>
-			<input type="text" name="why_note" required maxlength="500" value={ f.WhyNote } class="field"/>
+		<div>
+			<label for={ "swhy-" + f.SolutionID } class="block text-sm font-semibold text-stone-900">What are you improving?</label>
+			<input id={ "swhy-" + f.SolutionID } type="text" name="why_note" required maxlength="500" value={ f.WhyNote } placeholder="e.g. Added the cost of the tool" class="field"/>
 			@ProblemFieldError(f.Errors, "why_note")
-		</label>
+		</div>
+		<div>
+			<label for={ "sbody-" + f.SolutionID } class="block text-sm font-semibold text-stone-900">Revised solution</label>
+			<textarea id={ "sbody-" + f.SolutionID } name="body" rows="6" required minlength="50" maxlength="8000" data-aim="600" class="field leading-relaxed">{ f.Body }</textarea>
+			@solutionCount("sbody-" + f.SolutionID)
+			@ProblemFieldError(f.Errors, "body")
+		</div>
 		@ProblemFieldError(f.Errors, "parent_revision_id")
 		@ProblemDisplayToggle(f.Handle, f.Display)
-		<button type="submit" class="btn">Suggest revision</button>
+		<button type="submit" class="btn w-full">Suggest revision</button>
 	</form>
 }
 
@@ -44,24 +45,53 @@ type SolutionFormView struct {
 	Errors    map[string]string
 }
 
+// solutionKindHint is the one-line explanation under each kind card.
+func solutionKindHint(kind string) string {
+	switch kind {
+	case "process_change":
+		return "Change how people work — no new tool"
+	case "off_the_shelf":
+		return "An existing product already does this"
+	case "custom_software":
+		return "Something needs to be built"
+	case "dont_automate":
+		return "It's fine as it is — here's why"
+	}
+	return ""
+}
+
 templ SolutionForm(f SolutionFormView) {
-	<form method="post" action={ templ.SafeURL("/p/" + f.ProblemID + "/solutions") } class="space-y-3" id="post-solution">
+	<form method="post" action={ templ.SafeURL("/p/" + f.ProblemID + "/solutions") } class="space-y-4" id="post-solution">
 		<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
-		<label class="block text-sm">
-			<span class="text-stone-700">What kind of solution?</span>
-			<select name="kind" required class="field">
+		<div role="radiogroup" aria-labelledby="solution-kind-label">
+			<p id="solution-kind-label" class="text-sm font-semibold text-stone-900">What kind of solution?</p>
+			<div class="mt-2 grid grid-cols-2 gap-2">
 				for _, k := range SolutionKinds {
-					<option value={ k } selected?={ f.Kind == k }>{ SolutionKindLabel(k) }</option>
+					<label class={ "kind-pick", "kind-" + k }>
+						<input type="radio" name="kind" value={ k } required checked?={ f.Kind == k }/>
+						<span class="flex items-start gap-1.5 text-[13px] font-semibold leading-tight text-stone-900">
+							<span class="kind-dot mt-[4px] shrink-0"></span>
+							{ SolutionKindLabel(k) }
+						</span>
+						<span class="text-xs leading-snug text-stone-500">{ solutionKindHint(k) }</span>
+					</label>
 				}
-			</select>
+			</div>
 			@ProblemFieldError(f.Errors, "kind")
-		</label>
-		<label class="block text-sm">
-			<span class="text-stone-700">Describe it so someone could do it tomorrow</span>
-			<textarea name="body" rows="6" required minlength="50" maxlength="8000" class="field">{ f.Body }</textarea>
+		</div>
+		<div>
+			<label for={ "solution-body-" + f.ProblemID } class="block text-sm font-semibold text-stone-900">Describe it so someone could do it tomorrow</label>
+			<p class="hint">Short steps beat long paragraphs. Name the tool, the cost and who does what.</p>
+			<textarea id={ "solution-body-" + f.ProblemID } name="body" rows="6" required minlength="50" maxlength="8000" data-aim="600" class="field leading-relaxed">{ f.Body }</textarea>
+			@solutionCount("solution-body-" + f.ProblemID)
 			@ProblemFieldError(f.Errors, "body")
-		</label>
+		</div>
 		@ProblemDisplayToggle(f.Handle, f.Display)
-		<button type="submit" class="btn">Post solution</button>
+		<button type="submit" class="btn w-full">Post solution</button>
 	</form>
+}
+
+// solutionCount is the length counter app.js fills for a data-aim field.
+templ solutionCount(id string) {
+	<p class="mt-1 text-right text-xs text-stone-500 tabular-nums" id={ id + "-count" }>Aim for about 600 characters</p>
 }
