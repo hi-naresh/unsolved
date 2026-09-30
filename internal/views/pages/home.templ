@@ -1,0 +1,31 @@
+package pages
+
+import (
+	"github.com/hi-naresh/unsolved/internal/views/layouts"
+	"github.com/hi-naresh/unsolved/internal/views/partials"
+)
+
+// HomeView is the front page: pinned seed problems, then open problems by score.
+type HomeView struct {
+	Pinned []partials.ProblemRowView
+	List   partials.ProblemRowsView
+}
+
+templ Home(v HomeView) {
+	@layouts.Base("Unsolved problems") {
+		<h1 class="text-2xl font-semibold">Unsolved problems</h1>
+		<p class="mt-1 text-stone-600">Real operational problems from people who live with them, ranked by the community.</p>
+		if len(v.Pinned) > 0 {
+			<section class="mt-6" aria-label="Pinned">
+				<ul class="divide-y divide-stone-200 border-y border-stone-200 bg-stone-100/50">
+					for _, r := range v.Pinned {
+						@partials.ProblemRow(r)
+					}
+				</ul>
+			</section>
+		}
+		<section class="mt-6">
+			@partials.ProblemList(v.List)
+		</section>
+	}
+}

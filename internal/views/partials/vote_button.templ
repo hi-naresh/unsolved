@@ -1,0 +1,49 @@
+package partials
+
+import (
+	"github.com/hi-naresh/unsolved/internal/auth"
+	"strconv"
+)
+
+// voteFlip optimistically flips the button before the request goes out; the
+// server's response replaces the whole form with the truth. On an error
+// response nothing is swapped, so the same script flips it back.
+const voteFlip = "var on=this.classList.toggle('voted');this.setAttribute('aria-pressed',on);var c=this.querySelector('.vote-count');c.textContent=(+c.textContent)+(on?1:-1);"
+
+const voteBase = "inline-flex items-center gap-1 rounded border px-2 py-1 text-sm tabular-nums"
+
+// VoteButton is the vote toggle. Without JS it is a plain form POST (the
+// server redirects back to the problem page); with htmx the button posts and
+// the response replaces the enclosing form.
+templ VoteButton(v VoteButtonView) {
+	switch v.Mode {
+		case VoteLive:
+			<form method="post" action={ templ.SafeURL(v.URL) } class="vote inline">
+				<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+				<button
+					type="submit"
+					hx-post={ v.URL }
+					hx-target="closest form"
+					hx-swap="outerHTML"
+					hx-on::before-request={ templ.JSUnsafeFuncCall(voteFlip) }
+					hx-on::response-error={ templ.JSUnsafeFuncCall(voteFlip) }
+					aria-pressed={ strconv.FormatBool(v.Voted) }
+					title="Vote"
+					class={ voteBase, "border-stone-300 bg-white hover:bg-stone-100 [&.voted]:border-amber-500 [&.voted]:bg-amber-50 [&.voted]:text-amber-800", templ.KV("voted", v.Voted) }
+				>
+					<span aria-hidden="true">▲</span>
+					<span class="vote-count">{ strconv.Itoa(int(v.Count)) }</span>
+				</button>
+			</form>
+		case VoteSignIn:
+			<a href={ templ.SafeURL(v.SignInURL) } class={ voteBase, "border-stone-300 bg-white hover:bg-stone-100" } title="Sign in to vote">
+				<span aria-hidden="true">▲</span>
+				<span class="vote-count">{ strconv.Itoa(int(v.Count)) }</span>
+			</a>
+		default:
+			<span class={ voteBase, "border-stone-200 text-stone-500" } title={ v.Note }>
+				<span aria-hidden="true">▲</span>
+				<span class="vote-count">{ strconv.Itoa(int(v.Count)) }</span>
+			</span>
+	}
+}

@@ -1,0 +1,79 @@
+package pages
+
+import (
+	"github.com/hi-naresh/unsolved/internal/auth"
+	"github.com/hi-naresh/unsolved/internal/views/layouts"
+	"github.com/hi-naresh/unsolved/internal/views/partials"
+)
+
+// NewProblemForm is the guided posting form and, on a 422, the user's input
+// with one message per bad field.
+type NewProblemForm struct {
+	Domains        []ProblemDomainOption
+	DomainID       string
+	CurrentProcess string
+	Pain           string
+	Tried          string
+	Title          string
+	Display        string
+	Handle         string
+	Errors         map[string]string
+}
+
+// NewProblem is /new. Fields are in the order the build doc fixes; there is
+// deliberately no field asking what should be built.
+templ NewProblem(f NewProblemForm) {
+	@layouts.Base("Post a problem") {
+		<h1 class="text-2xl font-semibold">Post a problem</h1>
+		<p class="mt-1 text-stone-600">Describe what happens today. Leave the solution to the community.</p>
+		<form method="post" action="/problems" class="mt-6 space-y-5">
+			<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+			<label class="block">
+				<span class="font-medium">Domain</span>
+				<select name="domain_id" required class="field">
+					<option value="" selected?={ f.DomainID == "" }>Choose…</option>
+					for _, d := range f.Domains {
+						<option value={ d.ID } selected?={ f.DomainID == d.ID }>{ d.Name }</option>
+					}
+				</select>
+				@partials.ProblemFieldError(f.Errors, "domain_id")
+			</label>
+			<label class="block">
+				<span class="font-medium">Describe how this is done today, step by step</span>
+				<textarea
+					name="current_process"
+					rows="8"
+					required
+					minlength="50"
+					maxlength="4000"
+					class="field"
+					hx-post="/new/similar"
+					hx-trigger="keyup changed delay:800ms"
+					hx-target="#similar"
+					hx-include="closest form"
+					hx-swap="innerHTML"
+				>{ f.CurrentProcess }</textarea>
+				@partials.ProblemFieldError(f.Errors, "current_process")
+			</label>
+			<div id="similar"></div>
+			<label class="block">
+				<span class="font-medium">What goes wrong or costs time?</span>
+				<textarea name="pain" rows="4" required minlength="20" maxlength="2000" class="field">{ f.Pain }</textarea>
+				@partials.ProblemFieldError(f.Errors, "pain")
+			</label>
+			<label class="block">
+				<span class="font-medium">What have you already tried?</span>
+				<textarea name="tried" rows="3" maxlength="2000" class="field" placeholder="nothing yet">{ f.Tried }</textarea>
+				@partials.ProblemFieldError(f.Errors, "tried")
+			</label>
+			<label class="block">
+				<span class="font-medium">One-line title</span>
+				<input type="text" name="title" required minlength="10" maxlength="140" value={ f.Title } class="field"/>
+				@partials.ProblemFieldError(f.Errors, "title")
+			</label>
+			@partials.ProblemDisplayToggle(f.Handle, f.Display)
+			@partials.ProblemFieldError(f.Errors, "display")
+			<button type="submit" class="btn">Post problem</button>
+		</form>
+	}
+}

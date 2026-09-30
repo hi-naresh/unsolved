@@ -1,0 +1,24 @@
+package partials
+
+// ProblemDisplayToggle is the per-post "Posting as @handle / Posting
+// anonymously" choice. current is "named" or "anonymous".
+templ ProblemDisplayToggle(handle, current string) {
+	<fieldset class="flex flex-wrap gap-4 text-sm">
+		<legend class="sr-only">Posting as</legend>
+		<label class="inline-flex items-center gap-1.5">
+			<input type="radio" name="display" value="named" checked?={ current != "anonymous" }/>
+			Posting as { "@" + handle }
+		</label>
+		<label class="inline-flex items-center gap-1.5">
+			<input type="radio" name="display" value="anonymous" checked?={ current == "anonymous" }/>
+			Posting anonymously
+		</label>
+	</fieldset>
+}
+
+// ProblemFieldError renders one field's validation message.
+templ ProblemFieldError(errs map[string]string, field string) {
+	if msg, ok := errs[field]; ok {
+		<p class="error" id={ field + "-error" }>{ msg }</p>
+	}
+}

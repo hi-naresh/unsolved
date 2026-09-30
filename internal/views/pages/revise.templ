@@ -1,0 +1,71 @@
+package pages
+
+import (
+	"github.com/hi-naresh/unsolved/internal/auth"
+	"github.com/hi-naresh/unsolved/internal/views/layouts"
+	"github.com/hi-naresh/unsolved/internal/views/partials"
+)
+
+// ReviseProblemForm is /p/{id}/revise, prefilled from the parent revision.
+type ReviseProblemForm struct {
+	ProblemID        string
+	ParentRevisionID string
+	ParentIsCurrent  bool
+	DomainName       string
+	CurrentProcess   string
+	Pain             string
+	Tried            string
+	Title            string
+	WhyNote          string
+	Display          string
+	Handle           string
+	Errors           map[string]string
+}
+
+templ ReviseProblem(f ReviseProblemForm) {
+	@layouts.Base("Revise problem") {
+		<p class="text-sm text-stone-500"><a href={ templ.SafeURL("/p/" + f.ProblemID) } class="hover:underline">← Back to the problem</a></p>
+		<h1 class="mt-2 text-2xl font-semibold">Revise this problem</h1>
+		<p class="mt-1 text-stone-600">
+			if f.ParentIsCurrent {
+				Your revision starts from the current version.
+			} else {
+				Your revision starts from an earlier version, not the current one.
+			}
+			It becomes current only if the community votes it above the current version.
+		</p>
+		<form method="post" action={ templ.SafeURL("/p/" + f.ProblemID + "/revisions") } class="mt-6 space-y-5">
+			<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+			<input type="hidden" name="parent_revision_id" value={ f.ParentRevisionID }/>
+			@partials.ProblemFieldError(f.Errors, "parent_revision_id")
+			<p class="text-sm text-stone-600">Domain: { f.DomainName }</p>
+			<label class="block">
+				<span class="font-medium">Describe how this is done today, step by step</span>
+				<textarea name="current_process" rows="8" required minlength="50" maxlength="4000" class="field">{ f.CurrentProcess }</textarea>
+				@partials.ProblemFieldError(f.Errors, "current_process")
+			</label>
+			<label class="block">
+				<span class="font-medium">What goes wrong or costs time?</span>
+				<textarea name="pain" rows="4" required minlength="20" maxlength="2000" class="field">{ f.Pain }</textarea>
+				@partials.ProblemFieldError(f.Errors, "pain")
+			</label>
+			<label class="block">
+				<span class="font-medium">What have you already tried?</span>
+				<textarea name="tried" rows="3" maxlength="2000" class="field">{ f.Tried }</textarea>
+				@partials.ProblemFieldError(f.Errors, "tried")
+			</label>
+			<label class="block">
+				<span class="font-medium">One-line title</span>
+				<input type="text" name="title" required minlength="10" maxlength="140" value={ f.Title } class="field"/>
+				@partials.ProblemFieldError(f.Errors, "title")
+			</label>
+			<label class="block">
+				<span class="font-medium">Why this change?</span>
+				<input type="text" name="why_note" required maxlength="500" value={ f.WhyNote } class="field" placeholder="e.g. Added the step where orders are printed"/>
+				@partials.ProblemFieldError(f.Errors, "why_note")
+			</label>
+			@partials.ProblemDisplayToggle(f.Handle, f.Display)
+			<button type="submit" class="btn">Submit revision</button>
+		</form>
+	}
+}
