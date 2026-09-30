@@ -162,6 +162,7 @@ type ProblemPage struct {
 	Forks     []ProblemLink
 	Solutions []SolutionItem
 	History   []store.ListProblemStateHistoryRow
+	Community CommunityVote // phase 4 community state vote
 }
 
 // ProblemPage reads the problem page. viewer may be nil (signed out).
@@ -172,6 +173,7 @@ func (s *Service) ProblemPage(ctx context.Context, id uuid.UUID, viewer *uuid.UU
 		return pg, notFound(err)
 	}
 	pg.Problem = p
+	pg.Community = s.communityVote(p, viewer != nil)
 	if err := json.Unmarshal(p.Forks, &pg.Forks); err != nil {
 		return pg, fmt.Errorf("decode forks: %w", err)
 	}

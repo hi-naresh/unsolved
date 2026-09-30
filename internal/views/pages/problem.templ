@@ -1,6 +1,8 @@
 package pages
 
 import (
+	"strconv"
+
 	"github.com/hi-naresh/unsolved/internal/auth"
 	"github.com/hi-naresh/unsolved/internal/views"
 	"github.com/hi-naresh/unsolved/internal/views/layouts"
@@ -17,6 +19,20 @@ type ProblemStateEventView struct {
 	Reason string
 	At     string
 }
+
+// CommunityVoteView is the phase-4 community state vote on the problem
+// page. Tallies are percentages of the threshold, never raw weights.
+type CommunityVoteView struct {
+	SolvedPercent  int
+	InvalidPercent int
+	VotedSolved    bool
+	VotedInvalid   bool
+	CanVoteSolved  bool // the viewer may add a solved vote
+	CanVoteInvalid bool // the viewer may add an invalid vote
+	SolvedOpensAt  string
+}
+
+func percentText(n int) string { return strconv.Itoa(n) + "%" }
 
 // ProblemPageView is /p/{id}.
 type ProblemPageView struct {
@@ -45,6 +61,7 @@ type ProblemPageView struct {
 	CanWrite       bool // signed-in writer and the problem is not invalid
 	ViewerIsPoster bool
 	SolutionForm   partials.SolutionFormView
+	Community      CommunityVoteView
 }
 
 templ Problem(v ProblemPageView) {
@@ -195,7 +212,48 @@ templ problemStatePanel(v ProblemPageView) {
 				}
 			</form>
 		}
+		@problemCommunityVote(v)
 	</section>
+}
+
+// problemCommunityVote: tallies for everyone; vote buttons only for eligible
+// viewers (and a withdraw button for anyone who has voted).
+templ problemCommunityVote(v ProblemPageView) {
+	if v.State != "invalid" {
+		<div class="community-vote mt-3 space-y-2 text-stone-600">
+			if v.Community.SolvedPercent > 0 {
+				<p class="community-tally">Community vote to mark solved: { percentText(v.Community.SolvedPercent) } of the way</p>
+			}
+			if v.Community.InvalidPercent > 0 {
+				<p class="community-tally">Community vote to mark invalid: { percentText(v.Community.InvalidPercent) } of the way</p>
+			}
+			if v.CanWrite && !v.ViewerIsPoster {
+				<div class="flex flex-wrap gap-2">
+					if v.State == "open" && (v.Community.CanVoteSolved || v.Community.VotedSolved) {
+						@communityVoteForm(v.ID, "solved", v.Community.VotedSolved, "Vote to mark solved")
+					}
+					if v.Community.CanVoteInvalid || v.Community.VotedInvalid {
+						@communityVoteForm(v.ID, "invalid", v.Community.VotedInvalid, "Vote to mark invalid")
+					}
+				</div>
+				if v.State == "open" && !v.Community.CanVoteSolved && !v.Community.VotedSolved {
+					<p class="text-xs text-stone-500">If the poster stays silent, members can vote this solved from { v.Community.SolvedOpensAt }.</p>
+				}
+			}
+		</div>
+	}
+}
+
+templ communityVoteForm(problemID, to string, voted bool, label string) {
+	<form method="post" action={ templ.SafeURL("/p/" + problemID + "/state") } class="inline">
+		<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+		<input type="hidden" name="to" value={ to }/>
+		if voted {
+			<button type="submit" class="btn-secondary" aria-pressed="true">Withdraw your vote ({ to })</button>
+		} else {
+			<button type="submit" class="btn-secondary" aria-pressed="false">{ label }</button>
+		}
+	</form>
 }
 
 // SolutionFormPage re-renders the post-a-solution form alone with errors.

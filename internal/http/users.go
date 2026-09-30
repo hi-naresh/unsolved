@@ -16,6 +16,7 @@ func (h *Handlers) mountUsers(r chi.Router) {
 	// Changing the handle is a profile edit: suspended accounts can't.
 	r.With(auth.RequireWriter).Post("/welcome", h.wrap(h.welcomeSubmit))
 	r.Get("/u/{handle}", h.wrap(h.profilePage))
+	r.With(auth.RequireWriter).Post("/u/{handle}/vouch", h.wrap(h.toggleVouch))
 	r.Get("/members", h.wrap(h.membersPage))
 }
 
@@ -48,11 +49,22 @@ func (h *Handlers) welcomeSubmit(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *Handlers) profilePage(w http.ResponseWriter, r *http.Request) error {
-	p, err := h.Svc.ProfileByHandle(r.Context(), chi.URLParam(r, "handle"))
+	p, err := h.Svc.ProfileFor(r.Context(), chi.URLParam(r, "handle"), contentViewerID(auth.UserFrom(r.Context())))
 	if err != nil {
 		return err
 	}
 	return h.render(w, r, http.StatusOK, pages.Profile(p), nil)
+}
+
+// toggleVouch is POST /u/{handle}/vouch (form field domain = slug): vouch
+// for the member in that domain, or withdraw the vouch.
+func (h *Handlers) toggleVouch(w http.ResponseWriter, r *http.Request) error {
+	res, err := h.Svc.ToggleVouch(r.Context(), auth.UserFrom(r.Context()).ID, chi.URLParam(r, "handle"), r.PostFormValue("domain"))
+	if err != nil {
+		return err
+	}
+	redirect(w, r, "/u/"+res.Handle+"#vouches")
+	return nil
 }
 
 func (h *Handlers) membersPage(w http.ResponseWriter, r *http.Request) error {

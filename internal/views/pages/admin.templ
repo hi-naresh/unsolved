@@ -2,6 +2,7 @@ package pages
 
 import (
 	"github.com/hi-naresh/unsolved/internal/auth"
+	"github.com/hi-naresh/unsolved/internal/views"
 	"github.com/hi-naresh/unsolved/internal/views/layouts"
 )
 
@@ -20,9 +21,19 @@ type AdminReport struct {
 	Handle       string
 	Suspended    bool
 	Deleted      bool
+	Tier         string // revision author's tier in the problem's domain
 	Reporter     string
 	Reason       string
 	Age          string
+}
+
+// adminAuthor is the revision author as an AuthorRef, so /admin renders
+// authorship (and the tier on anonymous posts) like every other page.
+func adminAuthor(rep AdminReport) views.AuthorRef {
+	if rep.Anonymous {
+		return views.NewAuthorRef("anonymous", "", false, rep.Tier)
+	}
+	return views.NewAuthorRef("named", rep.Handle, rep.Deleted || rep.Handle == "", rep.Tier)
 }
 
 func adminKindLabel(k string) string {
@@ -89,13 +100,7 @@ templ adminReportItem(rep AdminReport) {
 				<p class="mt-1 whitespace-pre-line text-sm text-stone-700">{ rep.Excerpt }</p>
 				<p class="mt-1 text-xs text-stone-500">
 					by
-					if rep.Anonymous {
-						Anonymous
-					} else if rep.Deleted || rep.Handle == "" {
-						deleted user
-					} else {
-						<a class="hover:underline" href={ templ.SafeURL("/u/" + rep.Handle) }>{ "@" + rep.Handle }</a>
-					}
+					@views.Author(adminAuthor(rep), auth.UserFrom(ctx))
 					if rep.ProblemState != "" {
 						· problem is { rep.ProblemState }
 					}

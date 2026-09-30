@@ -100,11 +100,12 @@ func (s *Service) adminSetState(ctx context.Context, adminID, problemID uuid.UUI
 	if err != nil {
 		return err
 	}
-	return s.Store.InTx(ctx, func(q *store.Queries, _ pgx.Tx) error {
-		from, err := q.AdminGetProblemStateForUpdate(ctx, problemID)
+	return s.Store.InTx(ctx, func(q *store.Queries, tx pgx.Tx) error {
+		lp, err := q.LockProblemForStateVote(ctx, problemID)
 		if err != nil {
 			return notFound(err)
 		}
+		from := lp.State
 		switch {
 		case from == to:
 			return ErrConflict
@@ -116,9 +117,14 @@ func (s *Service) adminSetState(ctx context.Context, adminID, problemID uuid.UUI
 		if err := q.AdminSetProblemState(ctx, store.AdminSetProblemStateParams{ID: problemID, State: to}); err != nil {
 			return err
 		}
-		return q.AdminInsertStateEvent(ctx, store.AdminInsertStateEventParams{
+		if err := q.AdminInsertStateEvent(ctx, store.AdminInsertStateEventParams{
 			ID: eventID, ProblemID: problemID, FromState: from, ToState: to, ActorID: &adminID, Reason: reason,
-		})
+		}); err != nil {
+			return err
+		}
+		// Leaving or returning from invalid moves the poster's (and top
+		// solution author's) standing points.
+		return s.enqueueStandingForStateChange(ctx, q, tx, problemID, lp.AuthorID, lp.DomainID)
 	})
 }
 
@@ -153,8 +159,8 @@ func (s *Service) AdminSetSuspended(ctx context.Context, adminID uuid.UUID, hand
 }
 
 // AdminZeroVotes sets weight = 0 on every vote the user has cast (problem and
-// solution revisions) and, in the same transaction, enqueues RescoreAll for
-// the affected problems. It returns the number of votes zeroed and the
+// solution revisions, and community state votes) and, in the same
+// transaction, enqueues RescoreAll for the affected problems. It returns the number of votes zeroed and the
 // affected problem ids (sorted, deduplicated).
 func (s *Service) AdminZeroVotes(ctx context.Context, adminID uuid.UUID, handle string) (int, []uuid.UUID, error) {
 	u, err := s.Store.GetUserByHandle(ctx, handle)
@@ -174,7 +180,11 @@ func (s *Service) AdminZeroVotes(ctx context.Context, adminID uuid.UUID, handle 
 		if err != nil {
 			return err
 		}
-		count = len(pids) + len(sids)
+		nstate, err := q.AdminZeroStateVoteWeights(ctx, u.ID)
+		if err != nil {
+			return err
+		}
+		count = len(pids) + len(sids) + int(nstate)
 		ids = append(append(ids, pids...), sids...)
 		slices.SortFunc(ids, func(a, b uuid.UUID) int { return strings.Compare(a.String(), b.String()) })
 		ids = slices.Compact(ids)

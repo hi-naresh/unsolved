@@ -248,6 +248,13 @@ type Profile struct {
 	Suspended       bool
 	Links           []ProfileLink // only when InDirectory
 	Contributions   []Contribution
+	// Phase 4: per-domain standing and vouches (see vouches.go).
+	Domains []ProfileDomain
+	// DeclaredCollapsed: the user has reached domain_contributor somewhere,
+	// so declared history is no longer shown prominently.
+	DeclaredCollapsed bool
+	// ViewerIsSelf: the signed-in viewer is this user.
+	ViewerIsSelf bool
 }
 
 type ProfileLink struct {
@@ -264,10 +271,16 @@ type Contribution struct {
 	CreatedAt time.Time
 }
 
-// ProfileByHandle loads a public profile: named contributions only (the query
-// filters author_display = 'named'), 30 most recent; social links only when
-// in_directory. Deleted users are not found. At most 3 queries.
+// ProfileByHandle loads a public profile as a signed-out viewer sees it.
 func (s *Service) ProfileByHandle(ctx context.Context, handle string) (Profile, error) {
+	return s.ProfileFor(ctx, handle, nil)
+}
+
+// ProfileFor loads a public profile: named contributions only (the query
+// filters author_display = 'named'), 30 most recent; social links only when
+// in_directory; per-domain vouch counts and, for viewer (nil = signed out),
+// where they may vouch. Deleted users are not found. Exactly 3 queries.
+func (s *Service) ProfileFor(ctx context.Context, handle string, viewer *uuid.UUID) (Profile, error) {
 	var p Profile
 	u, err := s.Store.GetUserByHandle(ctx, NormalizeHandle(handle))
 	if err != nil {
@@ -280,16 +293,8 @@ func (s *Service) ProfileByHandle(ctx context.Context, handle string) (Profile, 
 	if u.DeclaredHistory != nil {
 		p.DeclaredHistory = *u.DeclaredHistory
 	}
-	if u.InDirectory {
-		ids, err := s.Store.ListIdentitiesByUser(ctx, u.ID)
-		if err != nil {
-			return p, err
-		}
-		for _, id := range ids {
-			if id.ProfileUrl != nil && strings.HasPrefix(*id.ProfileUrl, "https://") {
-				p.Links = append(p.Links, ProfileLink{Provider: string(id.Provider), URL: *id.ProfileUrl})
-			}
-		}
+	if err := s.loadProfileReputation(ctx, &p, u.ID, viewer); err != nil {
+		return p, err
 	}
 	rows, err := s.Store.ListNamedContributions(ctx, store.ListNamedContributionsParams{UserID: u.ID, MaxRows: profileMaxItems})
 	if err != nil {

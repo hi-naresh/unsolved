@@ -217,6 +217,12 @@ func (h *Handlers) problemPageView(r *http.Request, pg service.ProblemPage) page
 		},
 		SignedIn: u != nil, CanWrite: canWrite, ViewerIsPoster: p.ViewerIsPoster,
 		SolutionForm: partials.SolutionFormView{ProblemID: pid, Handle: handle, Display: display},
+		Community: pages.CommunityVoteView{
+			SolvedPercent: pg.Community.SolvedPercent, InvalidPercent: pg.Community.InvalidPercent,
+			VotedSolved: pg.Community.VotedSolved, VotedInvalid: pg.Community.VotedInvalid,
+			CanVoteSolved: pg.Community.CanVoteSolved, CanVoteInvalid: pg.Community.CanVoteInvalid,
+			SolvedOpensAt: partials.ProblemDate(pg.Community.SolvedOpensAt),
+		},
 	}
 	if p.ForkedFromProblemID != nil {
 		title := ""
@@ -437,7 +443,8 @@ func (h *Handlers) setProblemState(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 	to := store.ProblemState(r.PostFormValue("to"))
-	if err := h.Svc.SetProblemState(r.Context(), id, auth.UserFrom(r.Context()).ID, to, r.PostFormValue("reason")); err != nil {
+	// The poster marks solved / reopens; anyone else casts a community vote.
+	if err := h.Svc.ChangeProblemState(r.Context(), id, auth.UserFrom(r.Context()).ID, to, r.PostFormValue("reason")); err != nil {
 		return err
 	}
 	redirect(w, r, "/p/"+id.String()+"#state")

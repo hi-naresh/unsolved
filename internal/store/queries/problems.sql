@@ -39,7 +39,23 @@ SELECT p.id, p.state, p.soft_solved, p.on_meta_board, p.is_seed, p.created_at,
                  JOIN problem_revisions fcr ON fcr.id = f.current_revision_id
                  WHERE f.forked_from_revision_id IN
                        (SELECT pr.id FROM problem_revisions pr WHERE pr.problem_id = p.id)),
-                '[]'::jsonb)::jsonb AS forks
+                '[]'::jsonb)::jsonb AS forks,
+       -- phase 4 community state vote: summed weights, the viewer's votes and
+       -- tier, and when the poster last acted (the 14-day silence rule)
+       COALESCE((SELECT sum(sv.weight) FROM problem_state_votes sv
+                 WHERE sv.problem_id = p.id AND sv.to_state = 'solved'), 0)::float8 AS solved_vote_weight,
+       COALESCE((SELECT sum(sv.weight) FROM problem_state_votes sv
+                 WHERE sv.problem_id = p.id AND sv.to_state = 'invalid'), 0)::float8 AS invalid_vote_weight,
+       EXISTS (SELECT 1 FROM problem_state_votes sv WHERE sv.problem_id = p.id AND sv.to_state = 'solved'
+                 AND sv.user_id = sqlc.narg(viewer_id)::uuid)::bool AS viewer_voted_solved,
+       EXISTS (SELECT 1 FROM problem_state_votes sv WHERE sv.problem_id = p.id AND sv.to_state = 'invalid'
+                 AND sv.user_id = sqlc.narg(viewer_id)::uuid)::bool AS viewer_voted_invalid,
+       COALESCE(vs.tier::text, 'member')::text AS viewer_tier,
+       GREATEST(p.created_at,
+                (SELECT max(e.created_at) FROM problem_state_events e
+                 WHERE e.problem_id = p.id AND e.actor_id = p.author_id),
+                (SELECT max(pr.created_at) FROM problem_revisions pr
+                 WHERE pr.problem_id = p.id AND pr.author_id = p.author_id))::timestamptz AS poster_last_active_at
 FROM problems p
 JOIN domains d ON d.id = p.domain_id
 JOIN problem_revisions r ON r.id = p.current_revision_id
@@ -47,6 +63,7 @@ JOIN users ru ON ru.id = r.author_id
 JOIN users pu ON pu.id = p.author_id
 LEFT JOIN user_domain_standing rs ON rs.user_id = r.author_id AND rs.domain_id = p.domain_id
 LEFT JOIN user_domain_standing ps ON ps.user_id = p.author_id AND ps.domain_id = p.domain_id
+LEFT JOIN user_domain_standing vs ON vs.user_id = sqlc.narg(viewer_id)::uuid AND vs.domain_id = p.domain_id
 LEFT JOIN problem_revisions fr ON fr.id = p.forked_from_revision_id
 WHERE p.id = sqlc.arg(id);
 

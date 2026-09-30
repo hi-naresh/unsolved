@@ -69,7 +69,9 @@ SELECT
   (tu.suspended_at IS NOT NULL)::boolean AS target_suspended,
   (tu.deleted_at IS NOT NULL)::boolean AS target_deleted,
   COALESCE(p.state::text, '')::text AS problem_state,
-  COALESCE(p.on_meta_board, false)::boolean AS problem_on_meta
+  COALESCE(p.on_meta_board, false)::boolean AS problem_on_meta,
+  -- the revision author's tier in the problem's domain (shown with Anonymous)
+  COALESCE(ts.tier::text, 'member')::text AS target_tier
 FROM reports r
 JOIN users rep ON rep.id = r.reporter_id
 LEFT JOIN problem_revisions pr ON r.target_kind = 'problem_revision' AND pr.id = r.target_id
@@ -77,6 +79,7 @@ LEFT JOIN solution_revisions sr ON r.target_kind = 'solution_revision' AND sr.id
 LEFT JOIN solutions s ON s.id = sr.solution_id
 LEFT JOIN problems p ON p.id = COALESCE(pr.problem_id, s.problem_id)
 LEFT JOIN users tu ON tu.id = CASE WHEN r.target_kind = 'user' THEN r.target_id ELSE COALESCE(pr.author_id, sr.author_id) END
+LEFT JOIN user_domain_standing ts ON r.target_kind <> 'user' AND ts.user_id = tu.id AND ts.domain_id = p.domain_id
 WHERE r.resolved_at IS NULL
   AND ($1::timestamptz IS NULL
        OR (r.created_at, r.id) > ($1::timestamptz, $2::uuid))
@@ -106,6 +109,7 @@ type AdminListOpenReportsRow struct {
 	TargetDeleted   bool
 	ProblemState    string
 	ProblemOnMeta   bool
+	TargetTier      string
 }
 
 // /admin moderation. Admins are ADMIN_HANDLES; there is no admin role in the DB.
@@ -137,6 +141,7 @@ func (q *Queries) AdminListOpenReports(ctx context.Context, arg AdminListOpenRep
 			&i.TargetDeleted,
 			&i.ProblemState,
 			&i.ProblemOnMeta,
+			&i.TargetTier,
 		); err != nil {
 			return nil, err
 		}

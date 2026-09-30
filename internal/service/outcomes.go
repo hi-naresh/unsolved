@@ -95,7 +95,7 @@ func (s *Service) RecordEmailOutcome(ctx context.Context, token string, outcome 
 	if !outcome.Valid() {
 		return c, Invalid("outcome", "Choose worked, partly or failed.")
 	}
-	err = s.Store.InTx(ctx, func(q *store.Queries, _ pgx.Tx) error {
+	err = s.Store.InTx(ctx, func(q *store.Queries, tx pgx.Tx) error {
 		p, err := q.LockOutcomeTarget(ctx, store.LockOutcomeTargetParams{ProblemID: c.ProblemID, SolutionID: c.SolutionID})
 		if err != nil {
 			return notFound(err)
@@ -121,10 +121,19 @@ func (s *Service) RecordEmailOutcome(ctx context.Context, token string, outcome 
 			return err
 		}
 		actor := c.PosterID
-		return q.AppendProblemStateEvent(ctx, store.AppendProblemStateEventParams{
+		if err := q.AppendProblemStateEvent(ctx, store.AppendProblemStateEventParams{
 			ID: id, ProblemID: c.ProblemID, FromState: p.State, ToState: store.ProblemStateSolved,
 			ActorID: &actor, Reason: EmailOutcomeReason, CreatedAt: now,
-		})
+		}); err != nil {
+			return err
+		}
+		// Phase 4: marked solved → RecomputeStanding for the poster (and the
+		// top solution's author), in this transaction.
+		w, err := q.GetProblemForWrite(ctx, c.ProblemID)
+		if err != nil {
+			return err
+		}
+		return s.enqueueStandingForStateChange(ctx, q, tx, c.ProblemID, p.AuthorID, w.DomainID)
 	})
 	return c, err
 }

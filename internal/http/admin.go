@@ -58,6 +58,7 @@ func adminReportView(row store.AdminListOpenReportsRow, now time.Time) pages.Adm
 		Handle:       row.TargetHandle,
 		Suspended:    row.TargetSuspended,
 		Deleted:      row.TargetDeleted,
+		Tier:         row.TargetTier,
 		Reporter:     row.ReporterHandle,
 		Reason:       row.Reason,
 		Age:          adminAge(now.Sub(row.CreatedAt)),

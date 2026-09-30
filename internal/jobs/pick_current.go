@@ -66,6 +66,10 @@ func nowFn(d Deps) func() time.Time {
 // A vote that commits while this job is running is deduplicated against it
 // (River's unique states include "running"), so after committing the job
 // re-reads the candidates and goes again if they moved underneath it.
+//
+// When the leader changes it enqueues RecomputeStanding for the new and the
+// displaced leader's authors in the same transaction, through the River
+// client running the job (none outside a worker, e.g. in tests).
 func PickCurrentRevision(ctx context.Context, d Deps, problemID uuid.UUID) error {
 	for range maxPickPasses {
 		used, err := pickProblemOnce(ctx, d, problemID)
@@ -118,7 +122,8 @@ func sameCandidates(a, b []ranking.Candidate) bool {
 // if the problem does not exist).
 func pickProblemOnce(ctx context.Context, d Deps, problemID uuid.UUID) ([]ranking.Candidate, error) {
 	var used []ranking.Candidate
-	err := d.Store.InTx(ctx, func(q *store.Queries, _ pgx.Tx) error {
+	ins := clientFrom(ctx)
+	err := d.Store.InTx(ctx, func(q *store.Queries, tx pgx.Tx) error {
 		inc, err := q.LockProblemForPick(ctx, problemID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil
@@ -142,8 +147,23 @@ func pickProblemOnce(ctx context.Context, d Deps, problemID uuid.UUID) ([]rankin
 		}); err != nil {
 			return err
 		}
-		if leader != incumbent && d.Log != nil {
+		if leader == incumbent {
+			return nil
+		}
+		if d.Log != nil {
 			d.Log.InfoContext(ctx, "current revision changed", "problem_id", problemID, "revision_id", leader)
+		}
+		for _, rid := range []uuid.UUID{leader, incumbent} {
+			if rid == uuid.Nil || ins == nil {
+				continue
+			}
+			a, err := q.GetRevisionAuthorDomain(ctx, rid)
+			if err != nil {
+				return err
+			}
+			if err := EnqueueStanding(ctx, ins, tx, a.AuthorID, a.DomainID); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
@@ -189,12 +209,29 @@ func pickSolutionOnce(ctx context.Context, d Deps, ins TxInserter, solutionID uu
 		}
 		cands := solutionCandidates(rows)
 		used = cands
-		leader := ranking.PickLeader(cands, deref(sol.CurrentRevisionID), d.Cfg.RankMinVotesToTakeOver)
+		incumbent := deref(sol.CurrentRevisionID)
+		leader := ranking.PickLeader(cands, incumbent, d.Cfg.RankMinVotesToTakeOver)
 		if leader != uuid.Nil {
 			if _, err := q.SetSolutionCurrentRevision(ctx, store.SetSolutionCurrentRevisionParams{
 				SolutionID: solutionID, RevisionID: leader,
 			}); err != nil {
 				return err
+			}
+		}
+		if leader != incumbent && ins != nil {
+			// The revision that became (or stopped being) current changes
+			// its author's standing.
+			for _, rid := range []uuid.UUID{leader, incumbent} {
+				if rid == uuid.Nil {
+					continue
+				}
+				a, err := q.GetSolutionRevisionAuthorDomain(ctx, rid)
+				if err != nil {
+					return err
+				}
+				if err := EnqueueStanding(ctx, ins, tx, a.AuthorID, a.DomainID); err != nil {
+					return err
+				}
 			}
 		}
 		return updateSoftSolved(ctx, d, q, tx, ins, sol.ProblemID)
@@ -217,6 +254,16 @@ func updateSoftSolved(ctx context.Context, d Deps, q *store.Queries, tx pgx.Tx, 
 	}
 	if err := q.SetProblemSoftSolved(ctx, store.SetProblemSoftSolvedParams{ID: problemID, SoftSolved: now}); err != nil {
 		return err
+	}
+	if ins != nil && top.ID != uuid.Nil {
+		// The top solution's author gains (or loses) the top-solution points.
+		a, err := q.GetTopSolutionAuthor(ctx, problemID)
+		if err != nil {
+			return err
+		}
+		if err := EnqueueStanding(ctx, ins, tx, a.AuthorID, a.DomainID); err != nil {
+			return err
+		}
 	}
 	if now && ins != nil {
 		if _, err := ins.InsertTx(ctx, tx, SolvedPromptArgs{ProblemID: problemID, SolutionID: top.ID}, nil); err != nil {
