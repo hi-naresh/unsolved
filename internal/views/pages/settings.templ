@@ -1,0 +1,118 @@
+package pages
+
+import (
+	"github.com/hi-naresh/unsolved/internal/auth"
+	"github.com/hi-naresh/unsolved/internal/views/layouts"
+)
+
+// SettingsForm is the /settings form state.
+type SettingsForm struct {
+	Handle          string
+	InDirectory     bool
+	DeclaredHistory string
+	Email           string
+	Suspended       bool              // profile edits are blocked; export and delete still work
+	Saved           bool              // show a "saved" notice
+	Errors          map[string]string // field → message
+}
+
+templ userFieldError(errs map[string]string, field string) {
+	if msg, ok := errs[field]; ok {
+		<p class="error">{ msg }</p>
+	}
+}
+
+templ Settings(f SettingsForm) {
+	@layouts.Base("Settings") {
+		<h1 class="text-2xl font-semibold">Settings</h1>
+		if f.Saved {
+			<p class="mt-4 rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">Saved.</p>
+		}
+		if f.Suspended {
+			<p class="mt-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+				Your account is suspended, so you can't change your profile. You can still export your data or delete your account.
+			</p>
+		}
+		<form method="post" action="/settings" class="mt-6 space-y-6">
+			<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+			<fieldset disabled?={ f.Suspended } class="space-y-6">
+				<div>
+					<label for="handle" class="block text-sm font-medium">Handle</label>
+					<div class="mt-1 flex items-center gap-1">
+						<span class="text-stone-500">{ "@" }</span>
+						<input
+							id="handle"
+							name="handle"
+							value={ f.Handle }
+							required
+							minlength="3"
+							maxlength="24"
+							pattern="[a-z0-9_]{3,24}"
+							autocomplete="off"
+							class="field mt-0"
+						/>
+					</div>
+					@userFieldError(f.Errors, "handle")
+				</div>
+				<div>
+					<label class="flex items-start gap-2 text-sm">
+						<input type="checkbox" name="in_directory" value="1" checked?={ f.InDirectory } class="mt-0.5"/>
+						<span>
+							<span class="font-medium">List me in the members directory</span>
+							<span class="block text-stone-500">Also shows your LinkedIn or X link on your profile.</span>
+						</span>
+					</label>
+				</div>
+				<div>
+					<label for="declared_history" class="block text-sm font-medium">Declared history</label>
+					<p class="text-xs text-stone-500">
+						Your background, in your words. Shown on your profile labelled "unverified"; it carries no weight in ranking.
+					</p>
+					<textarea id="declared_history" name="declared_history" rows="5" maxlength="2000" class="field">{ f.DeclaredHistory }</textarea>
+					@userFieldError(f.Errors, "declared_history")
+				</div>
+				<div>
+					<label for="email" class="block text-sm font-medium">Email <span class="font-normal text-stone-500">(optional)</span></label>
+					<p class="text-xs text-stone-500">
+						Used only to ask whether a solution to your problem worked. Never shown. Leave empty to remove it.
+					</p>
+					<input id="email" name="email" type="email" value={ f.Email } maxlength="254" autocomplete="email" class="field"/>
+					@userFieldError(f.Errors, "email")
+				</div>
+				<button type="submit" class="btn">Save</button>
+			</fieldset>
+		</form>
+		<section class="mt-12 border-t border-stone-200 pt-6">
+			<h2 class="text-lg font-semibold">Your data</h2>
+			<p class="mt-2 text-sm text-stone-700">
+				Download everything you've written or done here as JSON, including anonymous posts.
+			</p>
+			<a href="/settings/export" class="btn-secondary mt-3">Export my data</a>
+			<p class="mt-6 text-sm text-stone-700">
+				Deleting your account removes your sign-in links and profile. Your posts stay, shown as "deleted user".
+			</p>
+			<a href="/settings/delete" class="btn-secondary mt-3 text-red-700">Delete my account…</a>
+		</section>
+	}
+}
+
+// DeleteAccount is the confirmation page for /settings/delete.
+templ DeleteAccount(handle string) {
+	@layouts.Base("Delete account") {
+		<h1 class="text-2xl font-semibold">Delete your account?</h1>
+		<div class="mt-4 space-y-3 text-stone-700">
+			<p>This signs you out everywhere and cannot be undone. We will:</p>
+			<ul class="list-disc space-y-1 pl-6">
+				<li>remove the LinkedIn / X links that let you sign in as { "@" + handle };</li>
+				<li>clear your name, handle, declared history and email;</li>
+				<li>keep your problems, solutions and revisions, shown as "deleted user".</li>
+			</ul>
+			<p>If you sign in again later with the same provider account, you'll start a fresh, unconnected account.</p>
+		</div>
+		<form method="post" action="/settings/delete" class="mt-6 flex gap-3">
+			<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+			<button type="submit" class="inline-flex items-center rounded bg-red-700 px-3 py-1.5 text-sm text-white hover:bg-red-800">Delete my account</button>
+			<a href="/settings" class="btn-secondary">Cancel</a>
+		</form>
+	}
+}
