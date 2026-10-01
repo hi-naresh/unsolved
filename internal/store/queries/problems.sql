@@ -75,7 +75,9 @@ SELECT count(*)::int8 FROM (SELECT 1 FROM problems WHERE NOT is_seed LIMIT 50) s
 SELECT p.id, p.score, p.created_at, p.state, p.soft_solved, p.is_seed,
        d.slug AS domain_slug, d.name AS domain_name, r.title, r.vote_count,
        p.author_display, u.handle AS author_handle, (u.deleted_at IS NOT NULL)::bool AS author_deleted,
-       COALESCE(st.tier::text, 'member')::text AS author_tier
+       COALESCE(st.tier::text, 'member')::text AS author_tier,
+       left(r.pain, 220)::text AS pain_excerpt,
+       (SELECT count(*) FROM solutions so WHERE so.problem_id = p.id)::int4 AS solution_count
 FROM problems p
 JOIN domains d ON d.id = p.domain_id
 JOIN problem_revisions r ON r.id = p.current_revision_id
@@ -89,7 +91,9 @@ LIMIT 50;
 SELECT p.id, p.score, p.created_at, p.state, p.soft_solved, p.is_seed,
        d.slug AS domain_slug, d.name AS domain_name, r.title, r.vote_count,
        p.author_display, u.handle AS author_handle, (u.deleted_at IS NOT NULL)::bool AS author_deleted,
-       COALESCE(st.tier::text, 'member')::text AS author_tier
+       COALESCE(st.tier::text, 'member')::text AS author_tier,
+       left(r.pain, 220)::text AS pain_excerpt,
+       (SELECT count(*) FROM solutions so WHERE so.problem_id = p.id)::int4 AS solution_count
 FROM problems p
 JOIN domains d ON d.id = p.domain_id
 JOIN problem_revisions r ON r.id = p.current_revision_id
@@ -105,7 +109,9 @@ LIMIT sqlc.arg(lim);
 SELECT p.id, p.score, p.created_at, p.state, p.soft_solved, p.is_seed,
        d.slug AS domain_slug, d.name AS domain_name, r.title, r.vote_count,
        p.author_display, u.handle AS author_handle, (u.deleted_at IS NOT NULL)::bool AS author_deleted,
-       COALESCE(st.tier::text, 'member')::text AS author_tier
+       COALESCE(st.tier::text, 'member')::text AS author_tier,
+       left(r.pain, 220)::text AS pain_excerpt,
+       (SELECT count(*) FROM solutions so WHERE so.problem_id = p.id)::int4 AS solution_count
 FROM problems p
 JOIN domains d ON d.id = p.domain_id
 JOIN problem_revisions r ON r.id = p.current_revision_id
@@ -122,7 +128,9 @@ LIMIT sqlc.arg(lim);
 SELECT p.id, p.score, p.created_at, p.state, p.soft_solved, p.is_seed,
        d.slug AS domain_slug, d.name AS domain_name, r.title, r.vote_count,
        p.author_display, u.handle AS author_handle, (u.deleted_at IS NOT NULL)::bool AS author_deleted,
-       COALESCE(st.tier::text, 'member')::text AS author_tier
+       COALESCE(st.tier::text, 'member')::text AS author_tier,
+       left(r.pain, 220)::text AS pain_excerpt,
+       (SELECT count(*) FROM solutions so WHERE so.problem_id = p.id)::int4 AS solution_count
 FROM problems p
 JOIN domains d ON d.id = p.domain_id
 JOIN problem_revisions r ON r.id = p.current_revision_id
@@ -139,7 +147,9 @@ LIMIT sqlc.arg(lim);
 SELECT p.id, p.score, p.created_at, p.state, p.soft_solved, p.is_seed,
        d.slug AS domain_slug, d.name AS domain_name, r.title, r.vote_count,
        p.author_display, u.handle AS author_handle, (u.deleted_at IS NOT NULL)::bool AS author_deleted,
-       COALESCE(st.tier::text, 'member')::text AS author_tier
+       COALESCE(st.tier::text, 'member')::text AS author_tier,
+       left(r.pain, 220)::text AS pain_excerpt,
+       (SELECT count(*) FROM solutions so WHERE so.problem_id = p.id)::int4 AS solution_count
 FROM problems p
 JOIN domains d ON d.id = p.domain_id
 JOIN problem_revisions r ON r.id = p.current_revision_id

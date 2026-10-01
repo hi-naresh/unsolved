@@ -73,7 +73,7 @@ func TestPhase2Solutions(t *testing.T) {
 	mustStatus(t, pc.postForm("/s/"+sid+"/tried", url.Values{"outcome": {"partly"}}), http.StatusSeeOther)
 	mustStatus(t, pc.postForm("/s/"+sid+"/tried", url.Values{"outcome": {"sort of"}}), http.StatusUnprocessableEntity)
 	b = mustStatus(t, app.anon(t).get("/p/"+pid), http.StatusOK)
-	for _, want := range []string{`<span class="tabular-nums">1 worked</span>`, `<span class="tabular-nums">1 partly</span>`, `<span class="tabular-nums">0 didn't work</span>`, "Found the import in settings."} {
+	for _, want := range []string{`aria-label="1 worked, 1 partly, 0 didn&#39;t work"`, "Found the import in settings."} {
 		if !strings.Contains(b, want) {
 			t.Fatalf("outcomes lack %q", want)
 		}
@@ -96,7 +96,7 @@ func TestPhase2Solutions(t *testing.T) {
 	mustStatus(t, oc.postForm("/p/"+pid+"/state", url.Values{"to": {"solved"}}), http.StatusForbidden)
 	mustStatus(t, pc.postForm("/p/"+pid+"/state", url.Values{"to": {"solved"}, "reason": {"The CSV import did it."}}), http.StatusSeeOther)
 	b = mustStatus(t, pc.get("/p/"+pid), http.StatusOK)
-	if !strings.Contains(b, "Status: Solved") || !strings.Contains(b, "by the poster") || !strings.Contains(b, "The CSV import did it.") || !strings.Contains(b, "Reopen") {
+	if !strings.Contains(b, `chip chip-solved">Solved</span>`) || !strings.Contains(b, "by the poster") || !strings.Contains(b, "The CSV import did it.") || !strings.Contains(b, "Reopen") {
 		t.Fatal("solved state or history not shown")
 	}
 	mustStatus(t, pc.postForm("/p/"+pid+"/state", url.Values{"to": {"open"}}), http.StatusSeeOther)

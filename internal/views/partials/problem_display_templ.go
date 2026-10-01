@@ -31,7 +31,7 @@ func ProblemDisplayToggle(handle, current string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<fieldset class=\"flex flex-wrap gap-4 text-sm\"><legend class=\"sr-only\">Posting as</legend> <label class=\"inline-flex items-center gap-1.5\"><input type=\"radio\" name=\"display\" value=\"named\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<fieldset class=\"who\"><legend class=\"sr-only\">Posting as</legend> <label><input type=\"radio\" name=\"display\" value=\"named\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -41,20 +41,20 @@ func ProblemDisplayToggle(handle, current string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "> Posting as ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "> <svg class=\"size-4 shrink-0\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"7\" r=\"3.2\"></circle><path d=\"M3.8 16.5c1.1-2.8 3.4-4.3 6.2-4.3s5.1 1.5 6.2 4.3\" stroke-linecap=\"round\"></path></svg> <span class=\"min-w-0 text-center leading-tight [overflow-wrap:anywhere]\">Posting as ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs("@" + handle)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/partials/problem_display.templ`, Line: 10, Col: 28}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/partials/problem_display.templ`, Line: 11, Col: 101}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</label> <label class=\"inline-flex items-center gap-1.5\"><input type=\"radio\" name=\"display\" value=\"anonymous\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span></label> <label><input type=\"radio\" name=\"display\" value=\"anonymous\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -64,7 +64,7 @@ func ProblemDisplayToggle(handle, current string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "> Posting anonymously</label></fieldset>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "> <svg class=\"size-4 shrink-0\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M2.5 10s2.8-5 7.5-5 7.5 5 7.5 5-2.8 5-7.5 5-7.5-5-7.5-5Z\" stroke-linejoin=\"round\"></path><path d=\"m3.5 3.5 13 13\" stroke-linecap=\"round\"></path></svg> <span class=\"min-w-0 text-center leading-tight [overflow-wrap:anywhere]\">Posting anonymously</span></label></fieldset>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -95,33 +95,33 @@ func ProblemFieldError(errs map[string]string, field string) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if msg, ok := errs[field]; ok {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<p class=\"error\" id=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<p class=\"error flex items-start gap-1.5 dark:text-red-400\" id=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.ResolveAttributeValue(field + "-error")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/partials/problem_display.templ`, Line: 22, Col: 40}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/partials/problem_display.templ`, Line: 24, Col: 83}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\"><svg class=\"mt-0.5 size-4 shrink-0\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"10\" r=\"7.5\"></circle><path d=\"M10 6.2v4.6M10 13.6v.2\" stroke-linecap=\"round\"></path></svg> <span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(msg)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/partials/problem_display.templ`, Line: 22, Col: 48}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/partials/problem_display.templ`, Line: 26, Col: 14}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</span></p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

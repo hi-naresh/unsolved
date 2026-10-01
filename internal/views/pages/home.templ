@@ -7,25 +7,132 @@ import (
 
 // HomeView is the front page: pinned seed problems, then open problems by score.
 type HomeView struct {
-	Pinned []partials.ProblemRowView
-	List   partials.ProblemRowsView
+	Pinned  []partials.ProblemRowView
+	List    partials.ProblemRowsView
+	Domains []ProblemDomainOption
 }
 
 templ Home(v HomeView) {
-	@layouts.Base("Unsolved problems") {
-		<h1 class="text-2xl font-semibold">Unsolved problems</h1>
-		<p class="mt-1 text-stone-600">Real operational problems from people who live with them, ranked by the community.</p>
-		if len(v.Pinned) > 0 {
-			<section class="mt-6" aria-label="Pinned">
-				<ul class="divide-y divide-stone-200 border-y border-stone-200 bg-stone-100/50">
-					for _, r := range v.Pinned {
-						@partials.ProblemRow(r)
-					}
-				</ul>
-			</section>
+	@Explore(ExploreView{
+		Title:   "Unsolved problems",
+		Heading: "Unsolved problems",
+		Sub:     "Real operational problems, ranked by the people who live with them.",
+		Tab:     "open",
+		Domains: v.Domains,
+		Pinned:  v.Pinned,
+		List:    v.List,
+	})
+}
+
+// ExploreView is the two-pane explorer shared by / and /problems: a compact
+// list on the left, a live preview of the selected problem on the right.
+type ExploreView struct {
+	Title   string
+	Heading string
+	Sub     string
+	Tab     string // open | top | new | solved | invalid
+	Domain  string // selected domain slug, "" = all
+	Domains []ProblemDomainOption
+	Pinned  []partials.ProblemRowView
+	List    partials.ProblemRowsView
+}
+
+func exploreTabURL(tab, domain string) string {
+	u := "/problems?"
+	switch tab {
+	case "open":
+		if domain == "" {
+			return "/"
 		}
-		<section class="mt-6">
-			@partials.ProblemList(v.List)
-		</section>
+		u += "state=open&"
+	case "new":
+		u += "sort=new&"
+	case "solved":
+		u += "state=solved&"
+	case "invalid":
+		u += "state=invalid&"
+	default:
+		u += "sort=top&"
 	}
+	if domain != "" {
+		u += "domain=" + domain
+	}
+	return u
+}
+
+func ariaCurrent(on bool) string {
+	if on {
+		return "page"
+	}
+	return "false"
+}
+
+templ Explore(v ExploreView) {
+	@layouts.BaseWide(v.Title) {
+		<div class="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]">
+			<aside class="lg:sticky lg:top-[4.75rem] lg:flex lg:h-[calc(100vh-6rem)] lg:flex-col" aria-label="Problems">
+				<div class="shrink-0">
+					<h1 class="text-xl font-semibold tracking-tight">{ v.Heading }</h1>
+					<p class="mt-0.5 text-sm text-stone-500">{ v.Sub }</p>
+					<nav class="seg mt-3 w-full" aria-label="Sort and filter">
+						<a href={ templ.SafeURL(exploreTabURL("open", v.Domain)) } aria-current={ ariaCurrent(v.Tab == "open") } class="flex-1 text-center">Open</a>
+						<a href={ templ.SafeURL(exploreTabURL("top", v.Domain)) } aria-current={ ariaCurrent(v.Tab == "top") } class="flex-1 text-center">Top</a>
+						<a href={ templ.SafeURL(exploreTabURL("new", v.Domain)) } aria-current={ ariaCurrent(v.Tab == "new") } class="flex-1 text-center">New</a>
+						<a href={ templ.SafeURL(exploreTabURL("solved", v.Domain)) } aria-current={ ariaCurrent(v.Tab == "solved") } class="flex-1 text-center">Solved</a>
+					</nav>
+					if len(v.Domains) > 0 {
+						<div class="-mx-1 mt-3 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]" aria-label="Domains">
+							@domainPill(exploreTabURL(v.Tab, ""), "All", v.Domain == "")
+							for _, d := range v.Domains {
+								@domainPill(exploreTabURL(v.Tab, d.Slug), d.Name, v.Domain == d.Slug)
+							}
+						</div>
+					}
+				</div>
+				<div class="mt-3 lg:-mx-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-1.5 lg:pb-6">
+					if len(v.Pinned) > 0 {
+						<p class="kicker px-3.5 pb-1 pt-1">Start here</p>
+						<ul class="space-y-1">
+							for _, r := range v.Pinned {
+								@partials.ProblemRow(r)
+							}
+						</ul>
+						<p class="kicker px-3.5 pb-1 pt-4">Most wanted</p>
+					}
+					@partials.ProblemList(v.List)
+				</div>
+			</aside>
+			<section id="pane" class="hidden min-w-0 lg:block" aria-live="polite" aria-label="Problem preview">
+				@panePlaceholder()
+			</section>
+		</div>
+	}
+}
+
+templ domainPill(href, label string, on bool) {
+	<a
+		href={ templ.SafeURL(href) }
+		aria-current={ ariaCurrent(on) }
+		class={ "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition",
+			templ.KV("border-accent bg-accent text-white", on),
+			templ.KV("border-stone-200 bg-white text-stone-600 hover:border-stone-300 hover:text-stone-900", !on) }
+	>{ label }</a>
+}
+
+// panePlaceholder shows until app.js loads the first problem into the pane.
+templ panePlaceholder() {
+	<div class="card grid min-h-[60vh] place-items-center p-10 text-center">
+		<div class="max-w-sm">
+			<svg class="mx-auto size-24 text-stone-300" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+				<circle cx="60" cy="60" r="14" class="fill-accent/15 stroke-accent"></circle>
+				<circle cx="22" cy="30" r="8"></circle>
+				<circle cx="98" cy="34" r="10"></circle>
+				<circle cx="94" cy="92" r="7"></circle>
+				<circle cx="26" cy="90" r="9"></circle>
+				<path d="M48 52 29 36M72 53l17-13M71 69l17 17M48 68 33 84" stroke-dasharray="3 4"></path>
+			</svg>
+			<p class="mt-4 font-semibold text-stone-800">Pick a problem to see it here</p>
+			<p class="mt-1 text-sm text-stone-500">Each problem shows how the work is done today, what goes wrong, and the solutions people have proposed.</p>
+		</div>
+	</div>
 }

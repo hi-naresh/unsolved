@@ -1,9 +1,6 @@
 package pages
 
-import (
-	"github.com/hi-naresh/unsolved/internal/views/layouts"
-	"github.com/hi-naresh/unsolved/internal/views/partials"
-)
+import "github.com/hi-naresh/unsolved/internal/views/partials"
 
 // ProblemDomainOption is one domain in a select.
 type ProblemDomainOption struct {
@@ -12,7 +9,7 @@ type ProblemDomainOption struct {
 	Name string
 }
 
-// ProblemsIndexView is /problems: the filter form and one page of results.
+// ProblemsIndexView is /problems: filters and one page of results.
 type ProblemsIndexView struct {
 	State   string
 	Domain  string
@@ -21,39 +18,54 @@ type ProblemsIndexView struct {
 	List    partials.ProblemRowsView
 }
 
-templ ProblemsIndex(v ProblemsIndexView) {
-	@layouts.Base("Problems") {
-		<h1 class="text-2xl font-semibold">Problems</h1>
-		<form method="get" action="/problems" class="mt-4 flex flex-wrap items-end gap-3 text-sm">
-			<label>
-				<span class="block text-stone-600">State</span>
-				<select name="state" class="field">
-					<option value="" selected?={ v.State == "" }>Any</option>
-					for _, s := range []string{"open", "solved", "invalid"} {
-						<option value={ s } selected?={ v.State == s }>{ partials.ProblemStateLabel(s) }</option>
-					}
-				</select>
-			</label>
-			<label>
-				<span class="block text-stone-600">Domain</span>
-				<select name="domain" class="field">
-					<option value="" selected?={ v.Domain == "" }>Any</option>
-					for _, d := range v.Domains {
-						<option value={ d.Slug } selected?={ v.Domain == d.Slug }>{ d.Name }</option>
-					}
-				</select>
-			</label>
-			<label>
-				<span class="block text-stone-600">Sort</span>
-				<select name="sort" class="field">
-					<option value="top" selected?={ v.Sort != "new" }>Top</option>
-					<option value="new" selected?={ v.Sort == "new" }>New</option>
-				</select>
-			</label>
-			<button type="submit" class="btn">Filter</button>
-		</form>
-		<section class="mt-6">
-			@partials.ProblemList(v.List)
-		</section>
+func problemsTab(v ProblemsIndexView) string {
+	switch {
+	case v.State == "solved" || v.State == "invalid":
+		return v.State
+	case v.State == "open" && v.Sort != "new":
+		return "open"
+	case v.Sort == "new":
+		return "new"
 	}
+	return "top"
+}
+
+func problemsHeading(v ProblemsIndexView) (string, string) {
+	name := ""
+	for _, d := range v.Domains {
+		if d.Slug == v.Domain {
+			name = d.Name
+		}
+	}
+	switch problemsTab(v) {
+	case "solved":
+		if name != "" {
+			return "Solved in " + name, "Problems the community has cracked."
+		}
+		return "Solved problems", "Problems the community has cracked, and how."
+	case "new":
+		if name != "" {
+			return "New in " + name, "The latest problems, newest first."
+		}
+		return "New problems", "The latest problems, newest first."
+	case "invalid":
+		return "Invalid problems", "Kept for the record."
+	}
+	if name != "" {
+		return name, "Problems in " + name + ", ranked by the community."
+	}
+	return "Problems", "Every problem, ranked by the community."
+}
+
+templ ProblemsIndex(v ProblemsIndexView) {
+	{{ h, sub := problemsHeading(v) }}
+	@Explore(ExploreView{
+		Title:   h,
+		Heading: h,
+		Sub:     sub,
+		Tab:     problemsTab(v),
+		Domain:  v.Domain,
+		Domains: v.Domains,
+		List:    v.List,
+	})
 }

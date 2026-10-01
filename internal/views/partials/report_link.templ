@@ -7,24 +7,30 @@ import "github.com/hi-naresh/unsolved/internal/auth"
 // the target's uuid. It posts via htmx to /report and swaps itself for
 // ReportThanks; without JS the form posts normally and redirects back.
 templ ReportLink(kind string, id string) {
-	<details class="report-link inline-block text-xs text-stone-500">
-		<summary class="cursor-pointer select-none hover:underline">Report</summary>
+	<details class="report-link inline-block text-xs">
+		<summary>
+			<svg class="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4.5 17V3.5M4.5 4h9l-1.8 3.5L13.5 11h-9" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+			Report
+		</summary>
 		<form
 			method="post"
 			action="/report"
 			hx-post="/report"
 			hx-target="closest details"
 			hx-swap="outerHTML"
-			class="mt-2 w-72 space-y-2 rounded border border-stone-200 bg-white p-3 shadow-sm"
+			class="report-pop"
 		>
 			<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
 			<input type="hidden" name="target_kind" value={ kind }/>
 			<input type="hidden" name="target_id" value={ id }/>
-			<label class="block text-stone-700">
+			<label class="block text-sm font-medium text-stone-800">
 				What's wrong with this?
-				<textarea name="reason" rows="3" minlength="5" maxlength="500" required class="field"></textarea>
+				<span class="mt-0.5 block text-xs font-normal text-stone-500">Only admins see reports. Be specific.</span>
+				<textarea name="reason" rows="3" minlength="5" maxlength="500" required class="field text-sm font-normal"></textarea>
 			</label>
-			<button type="submit" class="btn-secondary">Send report</button>
+			<div class="flex items-center justify-end gap-2">
+				<button type="submit" class="btn text-xs">Send report</button>
+			</div>
 		</form>
 	</details>
 }

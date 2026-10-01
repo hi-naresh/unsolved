@@ -1,0 +1,106 @@
+/* Form pages (posting, revising, welcome, settings, sign-in, outcome) and the
+   solution forms. Owned by the forms redesign. Only stone/white/accent tokens
+   and translucent semantic tints, so both themes follow automatically. */
+
+@layer components {
+  /* --- numbered steps of a guided form ------------------------------------ */
+  .steps { @apply space-y-3; }
+  .step { @apply relative rounded-xl border border-stone-200 bg-white p-4 transition sm:p-5; box-shadow: var(--u-shadow); }
+  .step:focus-within { @apply border-accent/50; box-shadow: 0 0 0 4px color-mix(in srgb, var(--u-accent) 10%, transparent), var(--u-shadow); }
+  .step-head { @apply flex items-start gap-3; }
+  .step-num { @apply mt-px grid size-7 shrink-0 place-items-center rounded-full bg-stone-100 text-xs font-semibold text-stone-600 transition; }
+  .step:focus-within .step-num { @apply bg-accent text-white; }
+  .step[data-done] .step-num { @apply bg-emerald-500/15 text-emerald-700 dark:text-emerald-300; }
+  .step[data-done] .step-num > span { display: none; }
+  .step:not([data-done]) .step-num > svg { display: none; }
+  .step-title { @apply text-[15px] font-semibold leading-snug text-stone-900; }
+  .step-body { @apply mt-3 sm:pl-10; }
+  .hint { @apply mt-0.5 text-[13px] leading-snug text-stone-500; }
+  .hint-ok { @apply text-emerald-700 dark:text-emerald-300; }
+  .hint-bad { @apply text-amber-700 dark:text-amber-300; }
+  .opt-tag { @apply ml-1.5 rounded-full bg-stone-100 px-1.5 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-stone-500; }
+
+  /* textarea with a length meter underneath */
+  .field-lined { @apply mt-0 leading-relaxed; }
+  .meter-row { @apply mt-1.5 flex items-center gap-3 text-xs text-stone-500; }
+  .meter { @apply h-1 flex-1 overflow-hidden rounded-full bg-stone-100; }
+  .meter > i { @apply block h-full w-0 rounded-full bg-accent/70 transition-[width] duration-200; }
+  .meter > i.over { @apply bg-amber-500; }
+  .count { @apply shrink-0 tabular-nums; }
+  .count.text-amber-600 { @apply text-amber-700 dark:text-amber-300; }
+
+  /* selectable cards: a visually hidden radio inside a label */
+  .pick { @apply relative flex cursor-pointer select-none items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-300 hover:bg-stone-50; }
+  .pick > input { @apply sr-only; }
+  .pick:has(:checked) { @apply border-accent bg-accent-soft text-accent-ink; box-shadow: inset 0 0 0 1px var(--u-accent); }
+  .pick:has(:focus-visible) { outline: 2px solid var(--u-accent); outline-offset: 2px; }
+  .pick-check { @apply ml-auto hidden size-4 shrink-0 text-accent; }
+  .pick:has(:checked) .pick-check { @apply block; }
+
+  /* solution kind picker: the pick card in the kind's own hue */
+  .kind-pick { @apply relative flex cursor-pointer flex-col gap-1 rounded-lg border border-stone-200 bg-white p-2.5 transition hover:border-stone-300; }
+  .kind-pick > input { @apply sr-only; }
+  .kind-pick:has(:checked) { border-color: var(--k); background: color-mix(in srgb, var(--k) 9%, var(--u-white)); box-shadow: inset 0 0 0 1px var(--k); }
+  .kind-pick:has(:focus-visible) { outline: 2px solid var(--u-accent); outline-offset: 2px; }
+
+  /* "posting as" two-way switch */
+  .who { @apply grid grid-cols-2 gap-1 rounded-lg bg-stone-100 p-1 text-sm; }
+  .who > label { @apply flex min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-md px-2 py-1.5 font-medium text-stone-500 transition hover:text-stone-900; }
+  .who > label > input { @apply sr-only; }
+  .who > label:has(:checked) { @apply bg-white text-stone-900; box-shadow: var(--u-shadow); }
+  .who > label:has(:focus-visible) { outline: 2px solid var(--u-accent); outline-offset: 1px; }
+
+  /* input with a leading adornment (the @ of a handle) */
+  .adorn { @apply mt-1 flex items-stretch overflow-hidden rounded-lg border border-stone-300 bg-white transition focus-within:border-accent focus-within:ring-4 focus-within:ring-accent/15; }
+  .adorn > span { @apply grid place-items-center border-r border-stone-200 bg-stone-50 px-3 text-sm font-medium text-stone-500; }
+  .adorn > input { @apply min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none; }
+  .adorn > input:focus-visible { outline: none; }
+
+  /* on/off switch (a styled checkbox) */
+  .switch { @apply relative mt-0.5 h-5 w-9 shrink-0 cursor-pointer appearance-none rounded-full bg-stone-300 transition; }
+  .switch::before { content: ""; @apply absolute left-0.5 top-0.5 size-4 rounded-full bg-white transition; box-shadow: 0 1px 2px rgb(0 0 0 / .25); }
+  .switch:checked { @apply bg-accent; }
+  .switch:checked::before { transform: translateX(16px); }
+  @media (prefers-color-scheme: dark) { .switch::before { background: #f3f0ea; } }
+
+  /* settings groups */
+  .sgroup { @apply rounded-xl border border-stone-200 bg-white; box-shadow: var(--u-shadow); }
+  .sgroup-head { @apply flex items-start gap-3 border-b border-stone-200 px-4 py-3 sm:px-5; }
+  .sgroup-icon { @apply grid size-8 shrink-0 place-items-center rounded-lg bg-stone-100 text-stone-600; }
+  .sgroup-body { @apply space-y-5 px-4 py-4 sm:px-5; }
+
+  /* tinted notices */
+  .note { @apply flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-sm; }
+  .note > svg { @apply mt-0.5 size-4 shrink-0; }
+  .note-ok { @apply border-emerald-500/25 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200; }
+  .note-warn { @apply border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200; }
+  .note-info { @apply border-accent/20 bg-accent-soft text-accent-ink; }
+
+  /* danger actions */
+  .btn-danger { @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-600 px-3.5 py-2 text-sm font-medium text-red-50 shadow-sm transition hover:bg-red-700 active:scale-[0.98]; }
+  .btn-danger-soft { @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-1.5 text-sm font-medium text-red-700 transition hover:bg-red-500/10 active:scale-[0.98] dark:text-red-300; }
+
+  /* sign-in provider buttons */
+  .provider { @apply flex w-full items-center gap-3 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm font-medium text-stone-900 transition hover:border-stone-400 hover:bg-stone-50 active:scale-[0.99]; }
+  .provider-mark { @apply grid size-7 shrink-0 place-items-center rounded-md bg-stone-900 text-white; }
+
+  /* live preview of a problem card */
+  .pv-empty { @apply italic text-stone-400; }
+  .pv-steps.flow > li { @apply pb-2.5 pl-8 leading-5; }
+  .pv-steps.flow > li::before { @apply size-5 text-[10px]; }
+  .pv-steps.flow > li:not(:last-child)::after { @apply left-[9.5px] top-5; }
+  .pv-skel { @apply block h-2.5 rounded-full bg-stone-100; margin-top: 5px; }
+  .dots { @apply flex gap-1; }
+  .dots > span { @apply h-1 flex-1 rounded-full bg-stone-200 transition-colors; }
+  .dots > span.on { @apply bg-emerald-500; }
+
+  /* outcome choices */
+  .outcome { @apply flex w-full flex-row items-center gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3.5 text-left transition hover:border-stone-300 active:scale-[0.99] sm:flex-col sm:gap-2 sm:py-6 sm:text-center; box-shadow: var(--u-shadow); }
+  .outcome-text { @apply flex min-w-0 flex-col gap-0.5; }
+  .outcome:hover { box-shadow: var(--u-shadow-lg); }
+  .outcome[aria-current="true"] { border-color: var(--o); box-shadow: inset 0 0 0 1px var(--o), var(--u-shadow); background: color-mix(in srgb, var(--o) 7%, var(--u-white)); }
+  .outcome-icon { @apply grid size-10 shrink-0 place-items-center rounded-full sm:size-11; color: var(--o); background: color-mix(in srgb, var(--o) 14%, transparent); }
+  .o-worked { --o: #10b981; }
+  .o-partly { --o: #f59e0b; }
+  .o-failed { --o: #ef4444; }
+}

@@ -8,7 +8,59 @@ package pages
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/hi-naresh/unsolved/internal/views/layouts"
+import (
+	"math"
+	"strconv"
+	"strings"
+
+	"github.com/hi-naresh/unsolved/internal/views/layouts"
+)
+
+// aboutDecayPoint maps "days ago" to the decay chart's coordinates: x spans
+// 0–90 days over 40–300, y spans weight 0–1 over 118–22.
+func aboutDecayPoint(days float64) (x, y float64) {
+	return 40 + days*260/90, 118 - 96*math.Pow(0.5, days/30)
+}
+
+// aboutDecayPath is the 30-day half-life curve as SVG path data.
+func aboutDecayPath(area bool) string {
+	var b strings.Builder
+	for d := 0.0; d <= 90; d += 3 {
+		x, y := aboutDecayPoint(d)
+		if d == 0 {
+			b.WriteString("M")
+		} else {
+			b.WriteString(" L")
+		}
+		b.WriteString(evoF(x) + " " + evoF(y))
+	}
+	if area {
+		b.WriteString(" L300 118 L40 118 Z")
+	}
+	return b.String()
+}
+
+func aboutX(days float64) string { x, _ := aboutDecayPoint(days); return evoF(x) }
+func aboutY(days float64) string { _, y := aboutDecayPoint(days); return evoF(y) }
+
+func aboutAnchor(d float64) string {
+	switch d {
+	case 0:
+		return "start"
+	case 90:
+		return "end"
+	}
+	return "middle"
+}
+
+type aboutStep struct{ Title, Body string }
+
+var aboutSteps = []aboutStep{
+	{"Describe the process", "How the work is done today, step by step, and what goes wrong. Not what to build."},
+	{"Revisions compete", "Anyone can write a better version. Every version is kept; the best-voted one is shown."},
+	{"Solutions & tried-it", "Process change, a tool, custom software, or “don't automate”. People report whether it worked."},
+	{"Solved", "A top solution with enough votes is soft-solved; the poster can confirm it as solved."},
+}
 
 // About is the /about page. It explains ranking publicly and says that the
 // exact thresholds and weights exist but are private.
@@ -45,7 +97,276 @@ func About() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<article class=\"space-y-6 text-stone-800 leading-relaxed\"><h1 class=\"text-2xl font-semibold\">About Unsolved</h1><p>Unsolved is a place to post the operational problems that are still done by hand: the paper logbook, the Monday printout, the three WhatsApp groups. You describe <strong>how the work is done today, step by step</strong>, what goes wrong, and what you've already tried. You don't describe what should be built. That's deliberate: a clear process attracts better answers than a feature request.</p><section class=\"space-y-2\"><h2 class=\"text-lg font-semibold\">Revisions compete</h2><p>Anyone can write a better version of a problem or a solution. A new version never overwrites the old one: every revision is kept, with a note on why it was written, and people vote on revisions. The best-voted version becomes the one everyone sees, and you can always see how a problem evolved.</p></section><section class=\"space-y-2\"><h2 class=\"text-lg font-semibold\">Solutions include \"don't automate\"</h2><p>A solution can be a process change, an off-the-shelf tool, custom software, or the honest answer that this shouldn't be automated at all. People who try a solution record whether it worked, partly worked or failed.</p></section><section class=\"space-y-2\"><h2 class=\"text-lg font-semibold\">How ranking works</h2><ul class=\"list-disc space-y-1 pl-6\"><li>Every vote adds to a stored score, and votes fade with a <strong>30-day half-life</strong>: a vote from a month ago counts half as much as one today. Nothing is recomputed on the fly, so a list is ordered by the same number everyone sees.</li><li>A newer version of a problem or solution takes over as the current version only when it scores higher <em>and</em> has reached a minimum number of votes, so a single vote can't swap what everyone reads. Ties keep the current version.</li><li>When a problem's top solution gets enough votes it counts as <strong>soft-solved</strong> and leaves the front page's open list. The poster can mark it solved or reopen it; every state change is recorded.</li><li>Votes can carry different weight depending on a member's standing in a domain.</li></ul><p>The exact thresholds and weights exist but are <strong>kept private</strong>, so they're harder to game. They're the same for everyone.</p></section><section class=\"space-y-2\"><h2 class=\"text-lg font-semibold\">Anonymous posting</h2><p>You can post anonymously. Other users see \"Anonymous\" and your standing in that domain, never your handle. See the <a class=\"underline\" href=\"/privacy\">privacy page</a>: it explains what that does and doesn't hide.</p></section><section class=\"space-y-2\"><h2 class=\"text-lg font-semibold\">Moderation</h2><p>Anyone signed in can report a revision or a user. A small group of admins reviews reports and can mark a problem invalid or suspend an account. Nothing is deleted; invalid problems are hidden from lists.</p></section></article>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header><p class=\"kicker\">How it works</p><h1 class=\"mt-1 text-2xl font-semibold tracking-tight sm:text-3xl\">About Unsolved</h1><p class=\"mt-3 text-[15px] leading-relaxed text-stone-700\">A place for the operational problems still done by hand: the paper logbook, the Monday printout, the three WhatsApp groups. You describe <strong class=\"font-semibold text-stone-900\">how the work is done today, step by step</strong>, what goes wrong and what you've tried. A clear process attracts better answers than a feature request.</p></header><ol class=\"steps mt-8 grid gap-3 sm:grid-cols-4 sm:gap-0\" aria-label=\"From problem to solved\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			for i, s := range aboutSteps {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<li class=\"relative sm:pr-3\"><div class=\"flex items-center gap-2 sm:block\"><div class=\"flex items-center\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var3 = []any{"step-n grid size-8 shrink-0 place-items-center rounded-full text-sm font-semibold",
+					templ.KV("bg-accent text-white", i < 3),
+					templ.KV("bg-emerald-500/15 text-emerald-700", i == 3)}
+				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var3...)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<span class=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var4 string
+				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var3).String())
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 1, Col: 0}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"></span> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				if i < len(aboutSteps)-1 {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<span class=\"ml-2 hidden h-px flex-1 bg-gradient-to-r from-accent/50 to-stone-200 sm:block\" aria-hidden=\"true\"></span>")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div><h2 class=\"text-sm font-semibold text-stone-900 sm:mt-3\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var5 string
+				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(s.Title)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 84, Col: 72}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</h2></div><p class=\"mt-1 pl-10 text-sm leading-snug text-stone-600 sm:pl-0 sm:pr-2\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var6 string
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(s.Body)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 86, Col: 87}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</p></li>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</ol><div class=\"prose-doc mt-2\"><h2>Revisions compete</h2><p>A new version never overwrites the old one: every revision is kept, with a note on why it was written, and people vote on revisions. The best-voted version becomes the one everyone sees, and each problem has a \"How this evolved\" tree showing every branch.</p><h2>Solutions include \"don't automate\"</h2><p>A solution can be a process change, an off-the-shelf tool, custom software, or the honest answer that this shouldn't be automated at all. People who try a solution record whether it worked, partly worked or failed.</p><h2>How ranking works</h2></div><figure class=\"card mt-4 p-4 sm:p-5\"><svg class=\"mx-auto block w-full max-w-lg\" viewBox=\"0 0 320 146\" role=\"img\" aria-labelledby=\"decay-title decay-desc\"><title id=\"decay-title\">A vote's weight over time</title><desc id=\"decay-desc\">A vote counts fully today, half after 30 days, a quarter after 60 days and an eighth after 90 days.</desc> <g class=\"stroke-stone-200\" stroke-width=\"1\"><line x1=\"40\" y1=\"22\" x2=\"300\" y2=\"22\" stroke-dasharray=\"2 3\"></line> <line x1=\"40\" y1=\"70\" x2=\"300\" y2=\"70\" stroke-dasharray=\"2 3\"></line> <line x1=\"40\" y1=\"118\" x2=\"300\" y2=\"118\" class=\"stroke-stone-300\"></line></g> <g class=\"fill-stone-500 text-[9px]\" text-anchor=\"end\"><text x=\"34\" y=\"25\">1×</text> <text x=\"34\" y=\"73\">½×</text> <text x=\"34\" y=\"121\">0</text></g> <path d=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var7 string
+			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.ResolveAttributeValue(aboutDecayPath(true))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 118, Col: 34}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\" class=\"fill-accent/10\"></path> <path d=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var8 string
+			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.ResolveAttributeValue(aboutDecayPath(false))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 119, Col: 35}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var8)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" fill=\"none\" class=\"stroke-accent\" stroke-width=\"2\" stroke-linecap=\"round\"></path> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			for _, d := range []float64{0, 30, 60, 90} {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<line x1=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var9 string
+				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.ResolveAttributeValue(aboutX(d))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 121, Col: 25}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var9)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\" x2=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var10 string
+				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.ResolveAttributeValue(aboutX(d))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 121, Col: 42}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var10)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" y1=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var11 string
+				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.ResolveAttributeValue(aboutY(d))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 121, Col: 59}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var11)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\" y2=\"118\" class=\"stroke-accent/40\" stroke-dasharray=\"2 2\"></line> <circle cx=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var12 string
+				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.ResolveAttributeValue(aboutX(d))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 122, Col: 27}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" cy=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var13 string
+				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.ResolveAttributeValue(aboutY(d))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 122, Col: 44}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var13)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" r=\"3.5\" class=\"fill-white stroke-accent\" stroke-width=\"2\"></circle> <text x=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var14 string
+				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.ResolveAttributeValue(aboutX(d))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 123, Col: 24}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var14)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" y=\"134\" text-anchor=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var15 string
+				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.ResolveAttributeValue(aboutAnchor(d))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 123, Col: 63}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var15)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\" class=\"fill-stone-500 text-[9px]\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				if d == 0 {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "today")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				} else {
+					var templ_7745c5c3_Var16 string
+					templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(int(d)) + " days")
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 127, Col: 39}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</text> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<text x=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var17 string
+			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.ResolveAttributeValue(aboutX(30))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 131, Col: 24}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\" y=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var18 string
+			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.ResolveAttributeValue(aboutY(30))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 131, Col: 41}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "\" dx=\"7\" dy=\"-6\" class=\"fill-stone-800 text-[9.5px] font-semibold\">half</text> <text x=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var19 string
+			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.ResolveAttributeValue(aboutX(60))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 132, Col: 24}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\" y=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var20 string
+			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.ResolveAttributeValue(aboutY(60))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/about.templ`, Line: 132, Col: 41}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" dx=\"7\" dy=\"-6\" class=\"fill-stone-800 text-[9.5px] font-semibold\">quarter</text></svg><figcaption class=\"mt-2 text-sm text-stone-600\">Votes fade with a <strong class=\"font-semibold text-stone-900\">30-day half-life</strong>: a vote from a month ago counts half as much as one today.</figcaption></figure><div class=\"prose-doc\"><ul><li>Every vote adds to a stored score. Nothing is recomputed on the fly, so a list is ordered by the same number everyone sees.</li><li>A newer version of a problem or solution takes over as the current version only when it scores higher <em>and</em> has reached a minimum number of votes, so a single vote can't swap what everyone reads. Ties keep the current version.</li><li>When a problem's top solution gets enough votes it counts as <strong>soft-solved</strong> and leaves the front page's open list. The poster can mark it solved or reopen it; every state change is recorded.</li><li>Votes can carry different weight depending on a member's standing in a domain.</li></ul><p class=\"!mt-4 flex items-start gap-2.5 rounded-xl border border-stone-200 bg-stone-100 px-3.5 py-3 text-sm\"><svg class=\"mt-0.5 size-4 shrink-0 text-stone-500\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><rect x=\"4\" y=\"9\" width=\"12\" height=\"8\" rx=\"2\"></rect><path d=\"M7 9V6.5a3 3 0 0 1 6 0V9\"></path></svg> <span>The exact thresholds and weights exist but are <strong>kept private</strong>, so they're harder to game. They're the same for everyone.</span></p><h2>Anonymous posting</h2><p>You can post anonymously. Other users see \"Anonymous\" and your standing in that domain, never your handle. See the <a href=\"/privacy\">privacy page</a>: it explains what that does and doesn't hide.</p><h2>Moderation</h2><p>Anyone signed in can report a revision or a user. A small group of admins reviews reports and can mark a problem invalid or suspend an account. Nothing is deleted; invalid problems are hidden from lists.</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

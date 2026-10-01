@@ -49,7 +49,11 @@ func (h *Handlers) home(w http.ResponseWriter, r *http.Request) error {
 	if isHX(r) && after != "" {
 		return h.render(w, r, http.StatusOK, nil, partials.ProblemRows(rows))
 	}
-	v := pages.HomeView{List: rows}
+	domains, err := h.Svc.ProblemDomains(r.Context())
+	if err != nil {
+		return err
+	}
+	v := pages.HomeView{List: rows, Domains: problemDomainOptions(domains)}
 	for _, p := range list.Pinned {
 		row := problemRow(p)
 		row.Pinned = true
@@ -116,6 +120,7 @@ func problemRow(p service.ProblemListItem) partials.ProblemRowView {
 	return partials.ProblemRowView{
 		ID: p.ID.String(), Title: p.Title, DomainName: p.DomainName, DomainSlug: p.DomainSlug,
 		State: string(p.State), SoftSolved: p.SoftSolved, Votes: p.VoteCount, CreatedAt: p.CreatedAt,
+		Solutions: p.SolutionCount, Excerpt: partials.Excerpt(p.PainExcerpt, 180),
 		Author: contentAuthor(p.AuthorDisplay, p.AuthorHandle, p.AuthorDeleted, p.AuthorTier),
 	}
 }
@@ -187,6 +192,11 @@ func (h *Handlers) problemPage(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	v := h.problemPageView(r, pg)
+	if r.Header.Get("HX-Target") == "pane" {
+		// The explorer's preview pane asks for the compact version.
+		w.Header().Add("Vary", "HX-Target")
+		return h.render(w, r, http.StatusOK, nil, pages.ProblemPreview(v))
+	}
 	return h.render(w, r, http.StatusOK, pages.Problem(v), pages.ProblemContent(v))
 }
 
@@ -325,6 +335,7 @@ func (h *Handlers) problemEvolution(w http.ResponseWriter, r *http.Request) erro
 			Author:    contentAuthor(n.AuthorDisplay, n.AuthorHandle, n.AuthorDeleted, n.AuthorTier),
 			Vote:      voteView("/r/"+n.ID.String()+"/vote", n.ViewerVoted, n.VoteCount, u, invalid, n.ViewerIsAuthor, signIn),
 			CreatedAt: partials.ProblemDate(n.CreatedAt),
+			Created:   n.CreatedAt,
 		})
 	}
 	return h.render(w, r, http.StatusOK, pages.Evolution(v), pages.EvolutionContent(v))

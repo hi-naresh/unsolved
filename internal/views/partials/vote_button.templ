@@ -10,7 +10,11 @@ import (
 // response nothing is swapped, so the same script flips it back.
 const voteFlip = "var on=this.classList.toggle('voted');this.setAttribute('aria-pressed',on);var c=this.querySelector('.vote-count');c.textContent=(+c.textContent)+(on?1:-1);"
 
-const voteBase = "inline-flex items-center gap-1 rounded border px-2 py-1 text-sm tabular-nums"
+const voteBase = "group/vote flex w-11 shrink-0 flex-col items-center justify-center rounded-lg border py-1.5 text-sm font-semibold tabular-nums leading-none transition"
+
+templ voteArrow() {
+	<svg class="size-4 transition group-active/vote:-translate-y-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3.5 17 12H3l7-8.5Z"></path></svg>
+}
 
 // VoteButton is the vote toggle. Without JS it is a plain form POST (the
 // server redirects back to the problem page); with htmx the button posts and
@@ -18,7 +22,7 @@ const voteBase = "inline-flex items-center gap-1 rounded border px-2 py-1 text-s
 templ VoteButton(v VoteButtonView) {
 	switch v.Mode {
 		case VoteLive:
-			<form method="post" action={ templ.SafeURL(v.URL) } class="vote inline">
+			<form method="post" action={ templ.SafeURL(v.URL) } class="vote">
 				<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
 				<button
 					type="submit"
@@ -28,22 +32,22 @@ templ VoteButton(v VoteButtonView) {
 					hx-on::before-request={ templ.JSUnsafeFuncCall(voteFlip) }
 					hx-on::response-error={ templ.JSUnsafeFuncCall(voteFlip) }
 					aria-pressed={ strconv.FormatBool(v.Voted) }
-					title="Vote"
-					class={ voteBase, "border-stone-300 bg-white hover:bg-stone-100 [&.voted]:border-amber-500 [&.voted]:bg-amber-50 [&.voted]:text-amber-800", templ.KV("voted", v.Voted) }
+					title="Upvote"
+					class={ voteBase, "border-stone-200 bg-white text-stone-500 hover:border-amber-400 hover:text-amber-600 [&.voted]:border-amber-400 [&.voted]:bg-amber-500/12 [&.voted]:text-amber-600", templ.KV("voted", v.Voted) }
 				>
-					<span aria-hidden="true">▲</span>
-					<span class="vote-count">{ strconv.Itoa(int(v.Count)) }</span>
+					@voteArrow()
+					<span class="mt-1 text-stone-800 group-[.voted]/vote:text-amber-700"><span class="vote-count">{ strconv.Itoa(int(v.Count)) }</span></span>
 				</button>
 			</form>
 		case VoteSignIn:
-			<a href={ templ.SafeURL(v.SignInURL) } class={ voteBase, "border-stone-300 bg-white hover:bg-stone-100" } title="Sign in to vote">
-				<span aria-hidden="true">▲</span>
-				<span class="vote-count">{ strconv.Itoa(int(v.Count)) }</span>
+			<a href={ templ.SafeURL(v.SignInURL) } class={ voteBase, "border-stone-200 bg-white text-stone-400 hover:border-amber-400 hover:text-amber-600" } title="Sign in to vote">
+				@voteArrow()
+				<span class="mt-1 text-stone-800"><span class="vote-count">{ strconv.Itoa(int(v.Count)) }</span></span>
 			</a>
 		default:
-			<span class={ voteBase, "border-stone-200 text-stone-500" } title={ v.Note }>
-				<span aria-hidden="true">▲</span>
-				<span class="vote-count">{ strconv.Itoa(int(v.Count)) }</span>
+			<span class={ voteBase, "border-stone-200 bg-stone-50 text-stone-300" } title={ v.Note }>
+				@voteArrow()
+				<span class="mt-1 text-stone-600"><span class="vote-count">{ strconv.Itoa(int(v.Count)) }</span></span>
 			</span>
 	}
 }

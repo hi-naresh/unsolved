@@ -10,7 +10,6 @@ import (
 templ ProblemInterest(v InterestView) {
 	<form method="post" action={ templ.SafeURL("/p/" + v.ProblemID + "/interest") } class="interest inline-flex items-center gap-2 text-sm">
 		<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
-		<span class="interest-count tabular-nums">{ interestLabel(v.Count) }</span>
 		switch v.Mode {
 			case VoteLive:
 				<button
@@ -19,8 +18,10 @@ templ ProblemInterest(v InterestView) {
 					hx-target="closest form"
 					hx-swap="outerHTML"
 					aria-pressed={ strconv.FormatBool(v.Interested) }
-					class="btn-secondary"
+					class={ "btn-secondary", templ.KV("!border-accent/50 !bg-accent-soft !text-accent-ink", v.Interested) }
+					title="Tell the poster a builder is interested"
 				>
+					@rocket()
 					if v.Interested {
 						I'm no longer interested
 					} else {
@@ -28,9 +29,17 @@ templ ProblemInterest(v InterestView) {
 					}
 				</button>
 			case VoteSignIn:
-				<a href={ templ.SafeURL(v.SignInURL) } class="btn-secondary">I'd build for this</a>
+				<a href={ templ.SafeURL(v.SignInURL) } class="btn-secondary">
+					@rocket()
+					I'd build for this
+				</a>
 		}
+		<span class="interest-count text-xs tabular-nums text-stone-500">{ interestLabel(v.Count) }</span>
 	</form>
+}
+
+templ rocket() {
+	<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M11.5 3.5c2.5-.6 4.4-.5 5 0 .5.6.6 2.5 0 5l-5.2 5.2-4-4 4.2-6.2ZM7.3 9.7 4.5 9l1.8-2.6 3-.2M10.3 12.7l.7 2.8 2.6-1.8.2-3M5.5 14.5l-1.8 1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
 }
 
 func interestLabel(n int64) string {

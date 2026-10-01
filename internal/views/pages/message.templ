@@ -5,7 +5,16 @@ import "github.com/hi-naresh/unsolved/internal/views/layouts"
 // Message is a plain full page for errors and simple notices.
 templ Message(title, body string) {
 	@layouts.Base(title) {
-		<h1 class="text-2xl font-semibold">{ title }</h1>
-		<p class="mt-4 text-stone-700">{ body }</p>
+		<div class="mx-auto flex max-w-md flex-col items-center py-12 text-center sm:py-20">
+			<span class="grid size-14 place-items-center rounded-2xl bg-accent-soft text-accent-ink" aria-hidden="true">
+				<svg class="size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01" stroke-linecap="round"></path></svg>
+			</span>
+			<h1 class="mt-5 text-2xl font-semibold tracking-tight">{ title }</h1>
+			<p class="mt-3 text-[15px] leading-relaxed text-stone-600">{ body }</p>
+			<div class="mt-7 flex flex-wrap justify-center gap-2">
+				<a href="/" class="btn">Back to problems</a>
+				<a href="/search" class="btn-secondary">Search</a>
+			</div>
+		</div>
 	}
 }

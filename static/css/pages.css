@@ -1,0 +1,59 @@
+/* Browse pages (evolution graph, search, profile, members, admin, about, privacy). */
+
+@layer components {
+  /* authorship (internal/views/author.templ) */
+  .author-named { @apply inline-flex flex-wrap items-center gap-x-1 gap-y-0.5 align-baseline; }
+  .author-named > a.author { @apply font-medium text-stone-700 hover:text-accent hover:underline; }
+  .author-tier { @apply inline-flex items-center rounded-full bg-stone-100 px-1.5 py-px text-[10.5px] font-medium leading-4 text-stone-600; }
+  .author-tier-proven { @apply bg-accent-soft text-accent-ink; }
+  .author-anon { @apply inline-flex items-center gap-1 rounded-full border border-dashed border-stone-300 bg-stone-50 px-1.5 py-px text-[10.5px] font-medium leading-4 text-stone-600 align-baseline; }
+  .author-anon .tier { @apply font-normal text-stone-500; }
+  .author-deleted { @apply italic text-stone-400; }
+  .author-you { @apply text-[10.5px] font-medium text-stone-400; }
+
+  /* evolution graph */
+  .evo-canvas {
+    background-color: var(--u-stone-50);
+    background-image: radial-gradient(var(--u-stone-200) 1px, transparent 1.2px);
+    background-size: 18px 18px;
+  }
+  .evo-graph { font-family: inherit; }
+  .evo-node { cursor: pointer; outline: none; }
+  .evo-node .evo-dot { transition: stroke-width .15s, filter .15s; }
+  .evo-node:hover .evo-dot, .evo-node:focus-visible .evo-dot { stroke-width: 3.5; filter: drop-shadow(0 2px 4px rgb(0 0 0 / .18)); }
+  .evo-node:focus-visible .evo-hit { stroke: var(--u-accent); stroke-width: 1.5; stroke-dasharray: 3 3; }
+  .rev-card { transition: box-shadow .2s, border-color .2s; }
+  .rev-current { border-color: color-mix(in srgb, var(--u-accent) 35%, var(--u-stone-200)); }
+
+  /* similarity meter (search results, merge pairs) */
+  .meter { @apply relative inline-block h-1.5 w-14 overflow-hidden rounded-full bg-stone-200 align-middle; }
+  .meter > span { @apply absolute inset-y-0 left-0 rounded-full bg-accent; }
+
+  /* trending rank numerals */
+  .rank { @apply w-7 shrink-0 text-right text-xl font-semibold tabular-nums leading-none text-stone-300; }
+  li:nth-child(-n+3) > * > .rank { @apply text-accent; }
+
+  /* long-form reading pages (privacy, about) */
+  .prose-doc h2 { @apply mt-10 scroll-mt-20 text-lg font-semibold tracking-tight text-stone-900; }
+  .prose-doc p, .prose-doc ul { @apply mt-3 text-[15px] leading-relaxed text-stone-700; }
+  .prose-doc ul { @apply list-disc space-y-1.5 pl-5 marker:text-stone-400; }
+  .prose-doc a { @apply font-medium text-accent underline decoration-accent/30 underline-offset-2 hover:decoration-accent; }
+  .prose-doc strong { @apply font-semibold text-stone-900; }
+
+  /* report disclosure (partials/report_link.templ) */
+  .report-link { @apply relative; }
+  .report-link > summary { @apply inline-flex cursor-pointer list-none items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-stone-500 transition select-none hover:bg-stone-100 hover:text-stone-800; }
+  .report-link > summary::-webkit-details-marker { display: none; }
+  .report-link[open] > summary { @apply bg-stone-100 text-stone-800; }
+  .report-right .report-pop { left: auto; right: 0; }
+  .report-pop { @apply absolute left-0 z-20 mt-1.5 w-72 max-w-[calc(100vw-2rem)] space-y-2.5 rounded-xl border border-stone-200 bg-white p-3.5 text-left; box-shadow: var(--u-shadow-lg); }
+}
+
+@layer components {
+  .btn-danger { @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-500/30 bg-white px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red-400 transition hover:border-red-500/60 hover:bg-red-500/10 active:scale-[0.98]; }
+
+  /* about: how-it-works step flow */
+  .steps { counter-reset: s; }
+  .steps > li { counter-increment: s; }
+  .steps > li .step-n::before { content: counter(s); }
+}

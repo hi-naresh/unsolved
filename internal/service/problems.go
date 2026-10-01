@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -134,8 +135,27 @@ func (s *Service) Fork(ctx context.Context, problemID, revisionID, userID uuid.U
 }
 
 // ProblemDomains lists the domains for the posting form.
+//
+// Domains are a fixed, seeded list, so the first successful read is cached
+// for the life of the process; list pages show domain pills without paying a
+// query for them.
 func (s *Service) ProblemDomains(ctx context.Context) ([]store.Domain, error) {
-	return s.Store.ListDomains(ctx)
+	domainCache.Lock()
+	defer domainCache.Unlock()
+	if domainCache.list != nil {
+		return domainCache.list, nil
+	}
+	ds, err := s.Store.ListDomains(ctx)
+	if err != nil {
+		return nil, err
+	}
+	domainCache.list = ds
+	return ds, nil
+}
+
+var domainCache struct {
+	sync.Mutex
+	list []store.Domain
 }
 
 // ProblemLink is a problem id and title (fork links).

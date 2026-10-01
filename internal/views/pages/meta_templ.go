@@ -47,7 +47,7 @@ func MetaBoard(list partials.ProblemRowsView) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h1 class=\"text-2xl font-semibold\">Meta</h1><p class=\"mt-1 text-stone-600\">Problems with Unsolved itself.</p><section class=\"mt-6\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header class=\"flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between\"><div><p class=\"kicker\">Meta board</p><h1 class=\"mt-1 text-2xl font-semibold tracking-tight sm:text-3xl\">Meta</h1><p class=\"mt-2 max-w-lg text-[15px] text-stone-600\">Problems with Unsolved itself. Same rules as everywhere else: describe what happens today and what goes wrong, and vote on what matters.</p></div><a href=\"/about\" class=\"btn-secondary shrink-0 self-start sm:self-auto\">How it works</a></header><section class=\"card mt-6 px-4 sm:px-5 [&_#problem-list]:border-y-0\" aria-label=\"Meta problems\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

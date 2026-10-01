@@ -44,13 +44,88 @@ func Privacy() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<article class=\"space-y-6 text-stone-800 leading-relaxed\"><h1 class=\"text-2xl font-semibold\">Privacy</h1><p>Unsolved is a small service. We keep as little about you as we can and we don't sell or share it.</p><section class=\"space-y-2\"><h2 class=\"text-lg font-semibold\">What we store when you sign in</h2><p>You sign in with LinkedIn or X. From them we store only your <strong>provider user id</strong> and your <strong>profile URL</strong>, plus the display name you're shown under. We don't ask them for your email address and we don't get one. We never post anything to your LinkedIn or X account.</p><p>You choose a handle when you join. Your profile shows your social links only if you opt into the members directory in settings.</p></section><section class=\"space-y-2\"><h2 class=\"text-lg font-semibold\">Email (optional)</h2><p>You can add an email address in <a class=\"underline\" href=\"/settings\">settings</a>. We use it only to ask whether a solution to a problem you posted worked (a one-tap \"worked / partly / didn't\" link). Nothing else: no newsletters, no marketing. Remove it in settings at any time.</p></section><section class=\"space-y-2\"><h2 class=\"text-lg font-semibold\">Anonymous posts</h2><p>When you post anonymously, other users see \"Anonymous\" and never your handle, including on your profile. Anonymous posts are hidden from other users but <strong>not from the platform</strong>: we store who wrote them, the people who operate Unsolved (admins handling reports, for example) can see it, and they're included in your own data export.</p></section><section class=\"space-y-2\"><h2 class=\"text-lg font-semibold\">Exporting your data</h2><p><a class=\"underline\" href=\"/settings/export\">Settings → Export</a> downloads everything we hold about you as JSON, including your anonymous posts, revisions, solutions and votes.</p></section><section class=\"space-y-2\"><h2 class=\"text-lg font-semibold\">Deleting your account</h2><p>When you delete your account in <a class=\"underline\" href=\"/settings\">settings</a>:</p><ul class=\"list-disc space-y-1 pl-6\"><li>your LinkedIn/X identities and all your sessions are deleted, so you're signed out everywhere;</li><li>your profile is scrubbed: handle replaced, display name, declared history and email cleared;</li><li>what you wrote stays, shown as by \"deleted user\", because other people's revisions and solutions build on it.</li></ul></section><section class=\"space-y-2\"><h2 class=\"text-lg font-semibold\">Where it lives</h2><p>The service runs in London (Fly.io) with its database in AWS eu-west-2, London (Neon). Error reports are sent to Sentry so we can fix bugs. Our cookies are first-party and used only for sign-in and security (session and CSRF protection); there are no ad or tracking cookies.</p></section><section class=\"space-y-2\"><h2 class=\"text-lg font-semibold\">Contact</h2><p>For anything about your data under UK GDPR, including access or erasure requests, contact the data controller at <span class=\"font-mono\">[privacy contact email — to be added]</span>. You can also complain to the Information Commissioner's Office (ico.org.uk).</p></section></article>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header><p class=\"kicker\">Your data</p><h1 class=\"mt-1 text-2xl font-semibold tracking-tight sm:text-3xl\">Privacy</h1><p class=\"mt-3 text-[15px] leading-relaxed text-stone-700\">Unsolved is a small service. We keep as little about you as we can and we don't sell or share it.</p></header><aside class=\"card mt-6 p-4 sm:p-5\" aria-label=\"In short\"><p class=\"kicker\">In short</p><ul class=\"mt-3 grid gap-3 text-sm text-stone-700 sm:grid-cols-2\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = privacyPoint("No email needed", "Sign in with LinkedIn or X; email is optional and used for one thing.").Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = privacyPoint("Anonymous to others", "Other users never see your handle on anonymous posts. The platform can.").Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = privacyPoint("Export any time", "Download everything we hold about you as JSON.").Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = privacyPoint("Delete any time", "Your identities go; what you wrote stays, as “deleted user”.").Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</ul></aside><article class=\"prose-doc\"><h2 id=\"sign-in\">What we store when you sign in</h2><p>You sign in with LinkedIn or X. From them we store only your <strong>provider user id</strong> and your <strong>profile URL</strong>, plus the display name you're shown under. We don't ask them for your email address and we don't get one. We never post anything to your LinkedIn or X account.</p><p>You choose a handle when you join. Your profile shows your social links only if you opt into the members directory in settings.</p><h2 id=\"email\">Email (optional)</h2><p>You can add an email address in <a href=\"/settings\">settings</a>. We use it only to ask whether a solution to a problem you posted worked (a one-tap \"worked / partly / didn't\" link). Nothing else: no newsletters, no marketing. Remove it in settings at any time.</p><h2 id=\"anonymous\">Anonymous posts</h2><p>When you post anonymously, other users see \"Anonymous\" and never your handle, including on your profile. Anonymous posts are hidden from other users but <strong>not from the platform</strong>: we store who wrote them, the people who operate Unsolved (admins handling reports, for example) can see it, and they're included in your own data export.</p><h2 id=\"export\">Exporting your data</h2><p><a href=\"/settings/export\">Settings → Export</a> downloads everything we hold about you as JSON, including your anonymous posts, revisions, solutions and votes.</p><h2 id=\"delete\">Deleting your account</h2><p>When you delete your account in <a href=\"/settings\">settings</a>:</p><ul><li>your LinkedIn/X identities and all your sessions are deleted, so you're signed out everywhere;</li><li>your profile is scrubbed: handle replaced, display name, declared history and email cleared;</li><li>what you wrote stays, shown as by \"deleted user\", because other people's revisions and solutions build on it.</li></ul><h2 id=\"where\">Where it lives</h2><p>The service runs in London (Fly.io) with its database in AWS eu-west-2, London (Neon). Error reports are sent to Sentry so we can fix bugs. Our cookies are first-party and used only for sign-in and security (session and CSRF protection); there are no ad or tracking cookies.</p><h2 id=\"contact\">Contact</h2><p>For anything about your data under UK GDPR, including access or erasure requests, contact the data controller at <span class=\"font-mono text-sm\">[privacy contact email — to be added]</span>. You can also complain to the Information Commissioner's Office (ico.org.uk).</p></article>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
 		templ_7745c5c3_Err = layouts.Base("Privacy").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func privacyPoint(title, body string) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var3 == nil {
+			templ_7745c5c3_Var3 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<li class=\"flex gap-2.5\"><svg class=\"mt-0.5 size-4 shrink-0 text-emerald-600\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"m5 10.5 3 3 7-7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg> <span><span class=\"block font-medium text-stone-900\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var4 string
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(title)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/privacy.templ`, Line: 77, Col: 62}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span> <span class=\"text-stone-600\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var5 string
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(body)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/privacy.templ`, Line: 77, Col: 107}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</span></span></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

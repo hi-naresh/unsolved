@@ -1,6 +1,8 @@
 package pages
 
 import (
+	"strconv"
+
 	"github.com/hi-naresh/unsolved/internal/auth"
 	"github.com/hi-naresh/unsolved/internal/views"
 	"github.com/hi-naresh/unsolved/internal/views/layouts"
@@ -50,17 +52,37 @@ func adminKindLabel(k string) string {
 // Admin is the /admin page: unresolved reports, oldest first.
 templ Admin(reports []AdminReport, next string) {
 	@layouts.Base("Admin") {
-		<div class="flex items-baseline justify-between gap-4">
-			<h1 class="text-2xl font-semibold">Reports</h1>
-			<a href="/admin/merges" class="ml-auto text-sm underline">Merge suggestions</a>
-			<form method="post" action="/admin/rescore">
-				@adminCSRF()
-				<button type="submit" class="btn-secondary" title="Rebuild every stored score from the vote tables (after a half-life or weight change)">Rescore all</button>
-			</form>
-		</div>
-		<p class="mt-1 text-sm text-stone-500">Unresolved, oldest first. Every action here is logged with your id.</p>
+		<header class="flex flex-wrap items-end justify-between gap-4">
+			<div>
+				<p class="kicker">Admin · moderation queue</p>
+				<h1 class="mt-1 flex items-center gap-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+					Reports
+					if len(reports) > 0 {
+						<span class="chip chip-accent text-xs">{ strconv.Itoa(len(reports)) }</span>
+					}
+				</h1>
+				<p class="mt-1 text-sm text-stone-500">Unresolved, oldest first. Every action here is logged with your id.</p>
+			</div>
+			<div class="flex flex-wrap items-center gap-2">
+				<a href="/admin/merges" class="btn-secondary">Merge suggestions</a>
+				<form method="post" action="/admin/rescore">
+					@adminCSRF()
+					<button type="submit" class="btn-ghost" title="Rebuild every stored score from the vote tables (after a half-life or weight change)">
+						<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 10a6 6 0 1 1-1.8-4.3M16 4v3.5h-3.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+						Rescore all
+					</button>
+				</form>
+			</div>
+		</header>
 		if len(reports) == 0 {
-			<p class="mt-8 text-stone-600">No open reports.</p>
+			<div class="card mt-8 flex flex-col items-center px-6 py-12 text-center">
+				<span class="grid size-11 place-items-center rounded-full bg-emerald-500/12 text-emerald-700" aria-hidden="true">
+					<svg class="size-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 10.5 3 3 7-7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+				</span>
+				<p class="mt-3 font-medium text-stone-800">No open reports.</p>
+				<p class="mt-1 text-sm text-stone-500">The queue is clear. Near-duplicates may still need a look.</p>
+				<a href="/admin/merges" class="btn-secondary mt-4">Review merge suggestions</a>
+			</div>
 		}
 		<ul class="mt-6 space-y-4">
 			for _, rep := range reports {
@@ -68,7 +90,7 @@ templ Admin(reports []AdminReport, next string) {
 			}
 		</ul>
 		if next != "" {
-			<p class="mt-6"><a class="hover:underline" href={ templ.SafeURL("/admin?after=" + next) }>Next page →</a></p>
+			<p class="mt-6"><a class="btn-secondary" href={ templ.SafeURL("/admin?after=" + next) }>Next page →</a></p>
 		}
 	}
 }
@@ -77,88 +99,123 @@ templ adminCSRF() {
 	<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
 }
 
+templ adminStateChip(state string) {
+	switch state {
+		case "solved":
+			<span class="chip chip-solved">problem is solved</span>
+		case "invalid":
+			<span class="chip chip-invalid">problem is invalid</span>
+		case "":
+		default:
+			<span class="chip chip-open">{ "problem is " + state }</span>
+	}
+}
+
 templ adminReportItem(rep AdminReport) {
-	<li class="admin-report rounded border border-stone-200 bg-white p-4" id={ "report-" + rep.ID }>
-		<div class="flex flex-wrap items-baseline gap-x-2 text-xs text-stone-500">
-			<span class="font-medium uppercase tracking-wide">{ adminKindLabel(rep.Kind) }</span>
-			<span>· reported by <a class="hover:underline" href={ templ.SafeURL("/u/" + rep.Reporter) }>{ "@" + rep.Reporter }</a></span>
-			<span>· { rep.Age }</span>
+	<li class="admin-report card overflow-hidden" id={ "report-" + rep.ID }>
+		<div class="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-stone-200 bg-stone-50 px-4 py-2 text-xs text-stone-500">
+			<span class="chip border-stone-300 bg-white font-semibold uppercase tracking-wide text-stone-700">{ adminKindLabel(rep.Kind) }</span>
+			<span>reported by <a class="font-medium text-stone-700 hover:underline" href={ templ.SafeURL("/u/" + rep.Reporter) }>{ "@" + rep.Reporter }</a></span>
+			<span class="ml-auto inline-flex items-center gap-1">
+				<svg class="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="7"></circle><path d="M10 6v4l2.5 2" stroke-linecap="round"></path></svg>
+				{ rep.Age }
+			</span>
 		</div>
-		<div class="mt-2">
-			if rep.Kind == "user" {
-				if rep.Deleted {
-					<span class="text-stone-600">deleted user</span>
-				} else {
-					<a class="font-medium hover:underline" href={ templ.SafeURL("/u/" + rep.Handle) }>{ "@" + rep.Handle }</a>
-				}
-			} else {
-				if rep.Title != "" {
-					<a class="font-medium hover:underline" href={ templ.SafeURL("/p/" + rep.ProblemID) }>{ rep.Title }</a>
-				} else {
-					<a class="font-medium hover:underline" href={ templ.SafeURL("/p/" + rep.ProblemID) }>View problem</a>
-				}
-				<p class="mt-1 whitespace-pre-line text-sm text-stone-700">{ rep.Excerpt }</p>
-				<p class="mt-1 text-xs text-stone-500">
-					by
-					@views.Author(adminAuthor(rep), auth.UserFrom(ctx))
-					if rep.ProblemState != "" {
-						· problem is { rep.ProblemState }
-					}
-					if rep.OnMeta {
-						· on meta board
-					}
-				</p>
-			}
-			if rep.Suspended {
-				<p class="mt-1 text-xs font-medium text-red-700">User is suspended</p>
-			}
-		</div>
-		<blockquote class="mt-3 border-l-2 border-stone-300 pl-3 text-sm text-stone-800">{ rep.Reason }</blockquote>
-		<div class="mt-4 flex flex-wrap items-start gap-2 text-sm">
-			<form method="post" action={ templ.SafeURL("/admin/reports/" + rep.ID + "/resolve") }>
-				@adminCSRF()
-				<button type="submit" class="btn">Resolve</button>
-			</form>
-			if rep.ProblemID != "" {
-				if rep.ProblemState == "invalid" {
-					<form method="post" action={ templ.SafeURL("/admin/problems/" + rep.ProblemID + "/reopen") }>
-						@adminCSRF()
-						<button type="submit" class="btn-secondary">Reopen problem</button>
-					</form>
-				} else {
-					<form method="post" action={ templ.SafeURL("/admin/problems/" + rep.ProblemID + "/invalid") } class="flex gap-2">
-						@adminCSRF()
-						<input type="text" name="reason" required maxlength="500" placeholder="Reason for Invalid" class="rounded border border-stone-300 px-2 py-1 text-sm"/>
-						<button type="submit" class="btn-secondary">Mark problem Invalid</button>
-					</form>
-				}
-				<form method="post" action={ templ.SafeURL("/admin/problems/" + rep.ProblemID + "/meta") }>
-					@adminCSRF()
-					<button type="submit" class="btn-secondary">
-						if rep.OnMeta {
-							Remove from meta board
+		<div class="grid gap-4 p-4 sm:grid-cols-[1fr_1fr]">
+			<div class="min-w-0">
+				<p class="kicker">Reported</p>
+				<div class="mt-1.5">
+					if rep.Kind == "user" {
+						<span class="inline-flex items-center gap-2">
+							<span class="grid size-8 place-items-center rounded-full bg-stone-100 text-sm font-semibold text-stone-600" aria-hidden="true">{ userInitial(rep.Handle, "?") }</span>
+							if rep.Deleted {
+								<span class="text-stone-600">deleted user</span>
+							} else {
+								<a class="font-medium hover:underline" href={ templ.SafeURL("/u/" + rep.Handle) }>{ "@" + rep.Handle }</a>
+							}
+						</span>
+					} else {
+						if rep.Title != "" {
+							<a class="font-medium leading-snug text-stone-900 hover:text-accent" href={ templ.SafeURL("/p/" + rep.ProblemID) }>{ rep.Title }</a>
 						} else {
-							Move to meta board
+							<a class="font-medium text-stone-900 hover:text-accent" href={ templ.SafeURL("/p/" + rep.ProblemID) }>View problem</a>
 						}
+						<p class="clamp-3 mt-1 whitespace-pre-line text-sm text-stone-600">{ rep.Excerpt }</p>
+						<p class="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-stone-500">
+							by
+							@views.Author(adminAuthor(rep), auth.UserFrom(ctx))
+							@adminStateChip(rep.ProblemState)
+							if rep.OnMeta {
+								<span class="chip">on meta board</span>
+							}
+						</p>
+					}
+					if rep.Suspended {
+						<p class="mt-2"><span class="chip chip-invalid">User is suspended</span></p>
+					}
+				</div>
+			</div>
+			<div class="min-w-0">
+				<p class="kicker">Reason</p>
+				<blockquote class="mt-1.5 rounded-lg border-l-2 border-red-500/60 bg-red-500/5 px-3 py-2 text-sm leading-relaxed text-stone-800">{ rep.Reason }</blockquote>
+			</div>
+		</div>
+		<div class="flex flex-col gap-3 border-t border-stone-200 px-4 py-3 text-sm">
+			<div class="flex flex-wrap items-center gap-2">
+				<form method="post" action={ templ.SafeURL("/admin/reports/" + rep.ID + "/resolve") }>
+					@adminCSRF()
+					<button type="submit" class="btn">
+						<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 10.5 3 3 7-7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+						Resolve
 					</button>
 				</form>
-			}
-			if rep.Handle != "" && !rep.Deleted {
-				if rep.Suspended {
-					<form method="post" action={ templ.SafeURL("/admin/users/" + rep.Handle + "/unsuspend") }>
+				if rep.ProblemID != "" {
+					<form method="post" action={ templ.SafeURL("/admin/problems/" + rep.ProblemID + "/meta") }>
 						@adminCSRF()
-						<button type="submit" class="btn-secondary">{ "Unsuspend @" + rep.Handle }</button>
+						<button type="submit" class="btn-secondary">
+							if rep.OnMeta {
+								Remove from meta board
+							} else {
+								Move to meta board
+							}
+						</button>
 					</form>
-				} else {
-					<form method="post" action={ templ.SafeURL("/admin/users/" + rep.Handle + "/suspend") }>
-						@adminCSRF()
-						<button type="submit" class="btn-secondary">{ "Suspend @" + rep.Handle }</button>
-					</form>
+					if rep.ProblemState == "invalid" {
+						<form method="post" action={ templ.SafeURL("/admin/problems/" + rep.ProblemID + "/reopen") }>
+							@adminCSRF()
+							<button type="submit" class="btn-secondary">Reopen problem</button>
+						</form>
+					}
 				}
-				<form method="post" action={ templ.SafeURL("/admin/users/" + rep.Handle + "/zero-votes") }>
-					@adminCSRF()
-					<button type="submit" class="btn-secondary" title="Set all of this user's vote weights to 0 and rescore the affected problems">Zero votes</button>
-				</form>
+			</div>
+			if (rep.ProblemID != "" && rep.ProblemState != "invalid") || (rep.Handle != "" && !rep.Deleted) {
+				<div class="admin-danger flex flex-wrap items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 p-2">
+					<span class="kicker w-full px-1 text-red-700 dark:text-red-400 sm:w-auto">Danger</span>
+					if rep.ProblemID != "" && rep.ProblemState != "invalid" {
+						<form method="post" action={ templ.SafeURL("/admin/problems/" + rep.ProblemID + "/invalid") } class="flex min-w-0 flex-1 basis-full flex-wrap gap-2 sm:basis-64">
+							@adminCSRF()
+							<input type="text" name="reason" required maxlength="500" placeholder="Reason for Invalid" aria-label="Reason for Invalid" class="min-w-40 flex-1 rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-500/15"/>
+							<button type="submit" class="btn-danger">Mark problem Invalid</button>
+						</form>
+					}
+					if rep.Handle != "" && !rep.Deleted {
+						if rep.Suspended {
+							<form method="post" action={ templ.SafeURL("/admin/users/" + rep.Handle + "/unsuspend") }>
+								@adminCSRF()
+								<button type="submit" class="btn-secondary">{ "Unsuspend @" + rep.Handle }</button>
+							</form>
+						} else {
+							<form method="post" action={ templ.SafeURL("/admin/users/" + rep.Handle + "/suspend") }>
+								@adminCSRF()
+								<button type="submit" class="btn-danger">{ "Suspend @" + rep.Handle }</button>
+							</form>
+						}
+						<form method="post" action={ templ.SafeURL("/admin/users/" + rep.Handle + "/zero-votes") }>
+							@adminCSRF()
+							<button type="submit" class="btn-danger" title="Set all of this user's vote weights to 0 and rescore the affected problems">Zero votes</button>
+						</form>
+					}
+				</div>
 			}
 		</div>
 	</li>
