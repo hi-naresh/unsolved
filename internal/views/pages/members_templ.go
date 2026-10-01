@@ -58,7 +58,7 @@ func Members(members []service.Member, next string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<p class=\"kicker\">Directory</p><h1 class=\"mt-1 text-2xl font-semibold tracking-tight sm:text-3xl\">Members</h1><p class=\"mt-2 text-[15px] text-stone-600\">People who chose to be listed. Declared histories are unverified.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<p class=\"kicker\">Directory</p><h1 class=\"mt-1 text-2xl font-semibold tracking-tight sm:text-3xl\">People who know the work</h1><p class=\"mt-2 text-[15px] text-stone-600\">People who chose to be listed. Declared histories are unverified.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -109,7 +109,7 @@ func MembersList(members []service.Member, next string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			for _, m := range members {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<li class=\"card card-hover relative flex gap-3 p-4\"><span class=\"grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-base font-semibold text-accent-ink\" aria-hidden=\"true\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<li class=\"card card-hover member-card relative flex gap-3 p-5\"><span class=\"grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-base font-semibold text-accent-ink\" aria-hidden=\"true\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

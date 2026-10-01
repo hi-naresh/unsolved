@@ -4,15 +4,15 @@ package partials
 // next page when scrolled into view (or clicked) and swaps itself for those
 // rows; without JS it is a normal link.
 templ Pager(moreURL string) {
-	<li class="py-3 text-center">
+	<li class="pager py-3 text-center">
 		<a
 			href={ templ.SafeURL(moreURL) }
 			hx-get={ moreURL }
-			hx-trigger="intersect once, click"
+			hx-trigger="click"
 			hx-target="closest li"
 			hx-swap="outerHTML"
 			class="btn-ghost text-stone-500"
 			data-more
-		>Load more</a>
+		>Load more problems</a>
 	</li>
 }

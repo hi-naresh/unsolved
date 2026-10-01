@@ -145,7 +145,7 @@ func TestDiscoverySearchWithoutML(t *testing.T) {
 			start := time.Now()
 			resp := c.get("/search?q=stocktake")
 			got := body(t, resp)
-			if resp.StatusCode != http.StatusOK || !strings.Contains(got, "taking a break") || !strings.Contains(got, "Trending this week") {
+			if resp.StatusCode != http.StatusOK || !strings.Contains(got, "Search is unavailable right now") || !strings.Contains(got, "Trending this week") {
 				t.Fatalf("want friendly fallback, got %d\n%s", resp.StatusCode, got)
 			}
 			if d := time.Since(start); d > 2500*time.Millisecond {

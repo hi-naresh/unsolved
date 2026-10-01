@@ -4,6 +4,23 @@ STATICCHECK_VERSION := 2026.2.1
 TAILWIND_VERSION    := v4.3.3
 GOBIN               ?= $(shell go env GOPATH)/bin
 
+UNAME_S := $(shell uname -s)
+UNAME_M := $(shell uname -m)
+
+ifeq ($(UNAME_S),Darwin)
+  TAILWIND_OS := macos
+else
+  TAILWIND_OS := linux
+endif
+
+ifeq ($(UNAME_M),arm64)
+  TAILWIND_ARCH := arm64
+else ifeq ($(UNAME_M),aarch64)
+  TAILWIND_ARCH := arm64
+else
+  TAILWIND_ARCH := x64
+endif
+
 .PHONY: check vet staticcheck sqlc-diff templ-check test generate css tools dev run migrate seed ml
 
 ## check: everything CI runs. A phase is done only when this is green.
@@ -41,7 +58,7 @@ tools: bin/tailwindcss
 
 bin/tailwindcss:
 	mkdir -p bin
-	curl -sSL -o bin/tailwindcss https://github.com/tailwindlabs/tailwindcss/releases/download/$(TAILWIND_VERSION)/tailwindcss-linux-x64
+	curl -sSL -o bin/tailwindcss https://github.com/tailwindlabs/tailwindcss/releases/download/$(TAILWIND_VERSION)/tailwindcss-$(TAILWIND_OS)-$(TAILWIND_ARCH)
 	chmod +x bin/tailwindcss
 
 ## dev: templ watch + Tailwind watch + air reload. Needs `docker compose up` and a .env.

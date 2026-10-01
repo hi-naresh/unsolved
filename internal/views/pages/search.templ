@@ -8,7 +8,7 @@ import (
 // Search is GET /search: semantic search, or trending when q is empty.
 templ Search(v partials.SearchView) {
 	@layouts.Base(searchTitle(v.Query)) {
-		<section class="text-center">
+		<section class="page-introduction">
 			<h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Search problems</h1>
 			<p class="mx-auto mt-2 max-w-md text-[15px] text-stone-600">Describe the process or the pain in your own words. We match meaning, not keywords.</p>
 		</section>

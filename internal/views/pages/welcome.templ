@@ -20,7 +20,7 @@ const formHandleRule = "3–24 lowercase letters, digits or underscores."
 templ Welcome(f WelcomeForm) {
 	@layouts.Base("Welcome") {
 		<div class="mx-auto max-w-md sm:pt-6">
-			<div class="text-center">
+			<div class="page-introduction">
 				<div class="mx-auto grid size-12 place-items-center rounded-2xl bg-accent-soft text-accent-ink">
 					<svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3.5l1.9 4.6 4.9.4-3.7 3.2 1.1 4.8L12 14l-4.2 2.5 1.1-4.8-3.7-3.2 4.9-.4L12 3.5Z" stroke-linejoin="round"></path><path d="M5 20.5h14" stroke-linecap="round"></path></svg>
 				</div>
@@ -69,6 +69,6 @@ templ Welcome(f WelcomeForm) {
 			</form>
 			<p class="mt-4 text-center text-xs text-stone-500">You can change both any time in Settings.</p>
 		</div>
-		<script src="/static/js/forms.js" defer></script>
+		<script src="/static/js/forms.js?v=atlas-2" defer></script>
 	}
 }

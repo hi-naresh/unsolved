@@ -9,7 +9,7 @@ import (
 // SolutionCard is one solution: kind, current revision (clamped), author,
 // vote, a "tried it" outcome bar, and inline try/revise actions.
 templ SolutionCard(s SolutionView) {
-	<article class={ "card kind-rail kind-" + s.Kind, "scroll-mt-24 p-4" } id={ "s-" + s.ID }>
+	<article class={ "card kind-rail kind-" + s.Kind, "solution-card scroll-mt-24" } id={ "s-" + s.ID }>
 		<div class="flex items-start gap-3">
 			@VoteButton(s.Vote)
 			<div class="min-w-0 flex-1">
@@ -67,7 +67,7 @@ templ SolutionCard(s SolutionView) {
 										</label>
 									}
 								</fieldset>
-								<textarea name="note" rows="2" maxlength="1000" class="field" placeholder="What happened? (optional)"></textarea>
+								<textarea name="note" rows="2" maxlength="1000" class="field" aria-label="What happened? (optional)" placeholder="What happened? (optional)"></textarea>
 								<button type="submit" class="btn">Save outcome</button>
 							</form>
 						</details>
@@ -102,7 +102,7 @@ templ outcomeDot(o string) {
 // outcomeBar is "Tried it" as a stacked bar: worked / partly / didn't work.
 templ outcomeBar(s SolutionView) {
 	{{ t := Outcomes(s) }}
-	<div class="mt-3">
+	<div class="outcome-evidence">
 		if t.Total == 0 {
 			<p class="text-xs text-stone-400">No one has reported trying this yet.</p>
 		} else {

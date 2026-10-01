@@ -79,8 +79,13 @@ templ Problem(v ProblemPageView) {
 // ProblemContent is the problem page body: the problem on the left, its
 // solutions on the right (stacked on small screens).
 templ ProblemContent(v ProblemPageView) {
-	<div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_440px]">
-		<article id="problem" data-problem-id={ v.ID } class="min-w-0">
+	<nav class="section-jump" aria-label="Problem sections">
+  <a href="#problem">The problem</a>
+  <a href="#process">Current process</a>
+  <a href="#solutions">Solutions and evidence</a>
+ </nav>
+ <div class="problem-layout">
+		<article id="problem" data-problem-id={ v.ID } class="problem-document">
 			@problemHeader(v, true)
 			@problemBody(v, 0)
 			<div class="mt-6 flex flex-wrap items-center gap-2 border-t border-stone-200 pt-4 text-sm">
@@ -128,7 +133,7 @@ templ ProblemContent(v ProblemPageView) {
 			}
 			@problemStatePanel(v)
 		</article>
-		<aside id="solutions" class="min-w-0 lg:sticky lg:top-[4.75rem] lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pb-6 lg:pr-1" aria-label="Solutions">
+		<aside id="solutions" class="solution-column" aria-label="Solutions">
 			@solutionsColumn(v)
 		</aside>
 	</div>
@@ -137,7 +142,7 @@ templ ProblemContent(v ProblemPageView) {
 // ProblemPreview is the explorer's right-hand pane: the problem in brief,
 // its solution map and top solutions, and a link to the full page.
 templ ProblemPreview(v ProblemPageView) {
-	<article class="card overflow-hidden" data-problem-id={ v.ID }>
+	<article class="problem-preview" data-problem-id={ v.ID }>
 		<div class="p-6 pb-2">
 			@problemHeader(v, false)
 		</div>
@@ -151,9 +156,9 @@ templ ProblemPreview(v ProblemPageView) {
 				</h3>
 				<a href={ templ.SafeURL("/p/" + v.ID + "#solutions") } class="text-sm font-medium text-accent hover:underline">
 					if len(v.Solutions) == 0 {
-						Propose one →
+						Propose a solution
 					} else {
-						See all & discuss →
+						Explore solutions
 					}
 				</a>
 			</div>
@@ -203,13 +208,13 @@ templ problemHeader(v ProblemPageView, page bool) {
 		<a href={ templ.SafeURL("/problems?domain=" + v.DomainSlug) } class="chip hover:border-stone-300">{ v.DomainName }</a>
 		<span class={ partials.StateChip(v.State) }>{ partials.ProblemStateLabel(v.State) }</span>
 		if v.SoftSolved {
-			<span class="chip chip-solved" title="The top solution has enough votes">soft-solved</span>
+			<span class="chip chip-solved" title="The top solution has enough votes">Likely solved</span>
 		}
 		if v.OnMetaBoard {
-			<a href="/meta" class="chip">meta</a>
+			<a href="/meta" class="chip">Meta board</a>
 		}
 	</div>
-	<div class="mt-3 flex items-start gap-4">
+	<div class="problem-title-row mt-3 flex items-start gap-4">
 		@partials.VoteButton(v.Vote)
 		<div class="min-w-0">
 			if page {
@@ -240,12 +245,12 @@ templ problemBody(v ProblemPageView, maxSteps int) {
 	if maxSteps > 0 {
 		{{ fold = maxSteps }}
 	}
-	<section class="mt-5 rounded-xl border border-amber-500/25 bg-amber-500/8 p-4">
-		<h2 class="kicker !text-amber-700 dark:!text-amber-400">What goes wrong</h2>
+	<section class="problem-pain">
+		<h2 class="kicker">What goes wrong</h2>
 		<p id={ "pain-" + v.ID } data-clamp class="clamp-3 mt-1.5 whitespace-pre-line text-[15px] font-medium leading-relaxed text-stone-800">{ v.Pain }</p>
 		<button type="button" data-toggle={ "pain-" + v.ID } class="mt-1 text-xs font-medium text-amber-700 hover:underline dark:text-amber-400">Show more</button>
 	</section>
-	<section class="mt-6">
+	<section class="mt-6" id="process">
 		<div class="flex items-baseline justify-between">
 			<h2 class="kicker">How it's done today</h2>
 			<span class="text-xs text-stone-400">{ strconv.Itoa(len(steps)) } steps</span>
@@ -291,17 +296,17 @@ templ problemGlance(v ProblemPageView) {
 	{{ steps := partials.Steps(v.CurrentProcess) }}
 	{{ tried := partials.Steps(v.Tried) }}
 	<p class="clamp-2 mt-4 border-l-[3px] border-amber-400 pl-3 text-[15px] font-medium leading-relaxed text-stone-800" title={ v.Pain }>{ v.Pain }</p>
-	<div class="mt-5">
+	<div class="process-glance">
 		<div class="flex items-baseline justify-between">
 			<h3 class="kicker">Today's process</h3>
-			<a href={ templ.SafeURL("/p/" + v.ID) } class="text-xs text-stone-400 hover:text-stone-700">{ strconv.Itoa(len(steps)) } steps · full detail →</a>
+			<a href={ templ.SafeURL("/p/" + v.ID) } class="text-xs text-stone-400 hover:text-stone-700">{ strconv.Itoa(len(steps)) } steps · full detail</a>
 		</div>
-		<ol class="mt-2 grid gap-2 text-sm sm:grid-cols-2 xl:grid-cols-3" aria-label="Process steps">
+		<ol class="process-grid" aria-label="Process steps">
 			for i, st := range steps {
 				if i < 6 {
-					<li class="relative flex items-start gap-2 rounded-lg border border-stone-200 bg-stone-50 p-2.5" title={ st }>
-						<span class="grid size-5 shrink-0 place-items-center rounded-md bg-accent text-[11px] font-semibold text-white">{ strconv.Itoa(i + 1) }</span>
-						<span class="clamp-2 leading-snug text-stone-700">{ partials.StepLabel(st) }</span>
+					<li class="process-node" title={ st }>
+						<span class="process-number">{ strconv.Itoa(i + 1) }</span>
+						<span class="leading-snug text-stone-700">{ partials.StepLabel(st) }</span>
 					</li>
 				}
 			}
@@ -332,9 +337,10 @@ templ solutionsColumn(v ProblemPageView) {
 		}
 	</div>
 	if len(v.Solutions) > 2 {
-		<div class="card mt-4 p-3">
-			@partials.SolutionMapGraph(partials.SolutionMap(v.Solutions))
-		</div>
+		<details class="map-disclosure">
+   <summary>Explore the solution map</summary>
+   @partials.SolutionMapGraph(partials.SolutionMap(v.Solutions))
+  </details>
 	}
 	if v.CanWrite {
 		<details id="post-solution-panel" class="card mt-4 p-4" open?={ len(v.Solutions) == 0 || len(v.SolutionForm.Errors) > 0 }>

@@ -1,6 +1,9 @@
 package layouts
 
-import "github.com/hi-naresh/unsolved/internal/auth"
+import (
+ "github.com/hi-naresh/unsolved/internal/auth"
+ "strings"
+)
 
 // Base is the full-page layout for reading and form pages (narrow column).
 // hx-headers on <body> makes every htmx request carry the CSRF token.
@@ -24,31 +27,35 @@ templ shell(title string, wide bool) {
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<meta name="color-scheme" content="light dark"/>
+			<meta name="theme-color" content="#006d77"/>
 			<title>{ title } · Unsolved</title>
-			<link rel="stylesheet" href="/static/css/app.css"/>
-			<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f46e5'/%3E%3Cpath d='M10 9v8a6 6 0 0 0 12 0V9' stroke='white' stroke-width='3.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"/>
+			<script src="/static/js/theme.js?v=atlas-2"></script>
+			<link rel="stylesheet" href="/static/css/app.css?v=atlas-2"/>
+			<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23006d77'/%3E%3Cpath d='M10 9v8a6 6 0 0 0 12 0V9' stroke='white' stroke-width='3.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"/>
 			<script src="/static/htmx.min.js" defer></script>
-			<script src="/static/js/app.js" defer></script>
+			<script src="/static/js/app.js?v=atlas-2" defer></script>
 		</head>
 		<body class="min-h-screen bg-stone-50 text-stone-900 antialiased" hx-headers={ `{"X-CSRF-Token": "` + auth.CSRFToken(ctx) + `"}` }>
 			<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2">Skip to content</a>
 			@nav(auth.UserFrom(ctx))
 			if wide {
-				<main id="main" class="mx-auto max-w-7xl px-4 py-5 sm:px-6">
+				<main id="main" class="app-main app-main-wide">
 					{ children... }
 				</main>
 			} else {
-				<main id="main" class="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+				<main id="main" class="app-main app-main-reading">
 					{ children... }
 				</main>
 			}
-			<footer class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-10 text-sm text-stone-500 sm:px-6">
+			<footer class="app-footer">
 				<span class="flex items-center gap-2 font-medium text-stone-600">@logo("size-5") Unsolved</span>
 				<a href="/about" class="hover:text-stone-900">How it works</a>
 				<a href="/privacy" class="hover:text-stone-900">Privacy</a>
 				<a href="/meta" class="hover:text-stone-900">Meta board</a>
 				<a href="/members" class="hover:text-stone-900">Members</a>
 			</footer>
+			@mobileNav()
+			<div id="app-feedback" class="app-feedback" role="status" aria-live="polite" hidden></div>
 		</body>
 	</html>
 }
@@ -61,51 +68,74 @@ templ logo(class string) {
 }
 
 templ nav(u *auth.User) {
-	<header class="sticky top-0 z-30 border-b border-stone-200/80 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70">
-		<nav class="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:gap-4 sm:px-6" aria-label="Main">
-			<a href="/" class="flex items-center gap-2 font-semibold tracking-tight">
-				@logo("size-7")
-				<span class="hidden sm:inline">Unsolved</span>
-			</a>
-			<div class="ml-2 hidden items-center gap-1 md:flex">
-				<a href="/" class="btn-ghost">Explore</a>
-				<a href="/problems?state=solved" class="btn-ghost">Solved</a>
-				<a href="/meta" class="btn-ghost">Meta</a>
-			</div>
-			<form action="/search" method="get" role="search" class="relative ml-auto w-full max-w-xs">
-				<svg class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-stone-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="9" r="6"></circle><path d="m14 14 4 4" stroke-linecap="round"></path></svg>
-				<input type="search" name="q" placeholder="Search problems…" aria-label="Search problems" class="h-9 w-full rounded-lg border border-stone-200 bg-stone-50 pl-8 pr-3 text-sm placeholder:text-stone-400 focus:border-accent focus:bg-white focus:outline-none focus:ring-4 focus:ring-accent/15"/>
-			</form>
-			if u == nil {
-				<a href="/signin" class="btn shrink-0">Sign in</a>
-			} else {
-				<a href="/new" class="btn shrink-0" title="Post a problem">
-					<svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z"></path></svg>
-					<span class="hidden sm:inline">Post a problem</span>
-				</a>
-				<details class="relative shrink-0">
-					<summary class="grid size-9 cursor-pointer list-none place-items-center rounded-full bg-accent-soft text-sm font-semibold uppercase text-accent-ink [&::-webkit-details-marker]:hidden" aria-label="Account menu">{ initial(u.Handle) }</summary>
-					<div class="card absolute right-0 mt-2 w-52 p-1.5 text-sm" style="box-shadow: var(--u-shadow-lg)">
-						<p class="truncate px-2.5 py-1.5 text-stone-500">{ "@" + u.Handle }</p>
-						<a href={ templ.SafeURL("/u/" + u.Handle) } class="block rounded-md px-2.5 py-1.5 hover:bg-stone-100">Your profile</a>
-						<a href="/settings" class="block rounded-md px-2.5 py-1.5 hover:bg-stone-100">Settings</a>
-						if u.IsAdmin {
-							<a href="/admin" class="block rounded-md px-2.5 py-1.5 hover:bg-stone-100">Admin</a>
-						}
-						<form method="post" action="/auth/signout" class="border-t border-stone-200 pt-1 mt-1">
-							<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
-							<button type="submit" class="w-full rounded-md px-2.5 py-1.5 text-left hover:bg-stone-100">Sign out</button>
-						</form>
-					</div>
-				</details>
-			}
-		</nav>
-	</header>
+ <header class="app-header">
+  <nav class="app-nav" aria-label="Main">
+   <a href="/" class="brand" aria-label="Unsolved home">@logo("size-8")<span>unsolved<span class="brand-period">.</span></span></a>
+   <div class="desktop-links">
+    <a href="/" data-nav="explore">Explore</a>
+    <a href="/problems?state=solved" data-nav="solved">Solved</a>
+    <a href="/members" data-nav="members">Community</a>
+   </div>
+   <form action="/search" method="get" role="search" class="nav-search">
+    @navIcon("search")
+    <input type="search" name="q" placeholder="Find a problem…" aria-label="Search problems"/>
+    <kbd aria-hidden="true">/</kbd>
+   </form>
+   <a href="/search" class="mobile-search" aria-label="Search problems">@navIcon("search")</a>
+   <button type="button" class="theme-toggle" data-theme-toggle aria-label="Change appearance" title="Change appearance">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z"></path></svg>
+   </button>
+   <a href="/new" class="btn nav-post">@navIcon("post")<span>Post a problem</span></a>
+   if u == nil {
+    <a href="/signin" class="btn-secondary nav-signin">Sign in</a>
+   } else {
+    <details class="account-menu">
+     <summary aria-label="Account menu">{ initial(u.Handle) }</summary>
+     <div class="account-pop">
+      <p>{ "@" + u.Handle }</p>
+      <a href={ templ.SafeURL("/u/" + u.Handle) }>Your profile</a>
+      <a href="/settings">Settings</a>
+      if u.IsAdmin {
+<a href="/admin">Admin</a>
+}
+      <form method="post" action="/auth/signout">
+       <input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
+       <button type="submit">Sign out</button>
+      </form>
+     </div>
+    </details>
+   }
+  </nav>
+ </header>
+}
+
+templ mobileNav() {
+ <nav class="mobile-nav" aria-label="Mobile navigation">
+  <a href="/" data-nav="explore">@navIcon("explore")<span>Explore</span></a>
+  <a href="/search" data-nav="search">@navIcon("search")<span>Search</span></a>
+  <a href="/new" data-nav="post">@navIcon("post")<span>Post</span></a>
+  <a href="/members" data-nav="members">@navIcon("members")<span>Community</span></a>
+ </nav>
+}
+
+templ navIcon(kind string) {
+ <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  switch kind {
+   case "search":
+    <circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 4.5 4.5"></path>
+   case "post":
+    <rect x="4" y="4" width="16" height="16" rx="5"></rect><path d="M12 8v8M8 12h8"></path>
+   case "members":
+    <circle cx="9" cy="8" r="3"></circle><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"></path>
+   default:
+    <rect x="3" y="3" width="7" height="7" rx="2"></rect><rect x="14" y="3" width="7" height="7" rx="2"></rect><rect x="3" y="14" width="7" height="7" rx="2"></rect><rect x="14" y="14" width="7" height="7" rx="2"></rect>
+  }
+ </svg>
 }
 
 func initial(h string) string {
 	if h == "" {
 		return "?"
 	}
-	return h[:1]
+	return strings.ToUpper(string([]rune(h)[0]))
 }
