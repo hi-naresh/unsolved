@@ -35,6 +35,7 @@ templ NewProblem(f NewProblemForm) {
 				<h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Post a problem</h1>
 				<p class="mt-2 text-[15px] leading-relaxed text-stone-600">Describe what happens today in a few short lines. Leave the solution to the community.</p>
 			</header>
+			@partials.FormErrors(f.Errors)
 			<form method="post" action="/problems" data-preview-form class="mt-6 grid grid-cols-1 gap-6 lg:mt-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10">
 				<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
 				<ol class="steps">
@@ -93,15 +94,18 @@ templ NewProblem(f NewProblemForm) {
 						@partials.ProblemFieldError(f.Errors, "display")
 					</li>
 				</ol>
-				<aside class="space-y-4 lg:sticky lg:top-20 lg:self-start" aria-label="Live preview">
+				<aside class="space-y-4 lg:sticky lg:top-28 lg:self-start" aria-label="Live preview">
 					@formPreviewHead(5)
-					@formProblemPreview(formDomainName(f.Domains, f.DomainID))
+					<details class="form-preview-disclosure" open>
+<summary>Preview your problem</summary>
+@formProblemPreview(formDomainName(f.Domains, f.DomainID))
+</details>
 					<button type="submit" class="btn w-full py-2.5 text-[15px]">Post problem</button>
 					<p class="text-center text-xs text-stone-500">Anyone can suggest a revision later — the best version wins by votes.</p>
 				</aside>
 			</form>
 		</div>
-		<script src="/static/js/forms.js" defer></script>
+		<script src="/static/js/forms.js?v=atlas-2" defer></script>
 	}
 }
 
@@ -143,7 +147,7 @@ templ formStep(n int, labelID, title, hint string, optional bool) {
 // counter; forms.js grows the bar towards the field's data-aim.
 templ formAimMeter(id string) {
 	<div class="meter-row">
-		<span class="meter" aria-hidden="true"><i id={ id + "-meter" }></i></span>
+		<span class="length-meter" aria-hidden="true"><i id={ id + "-meter" }></i></span>
 		<span class="count" id={ id + "-count" }></span>
 	</div>
 }

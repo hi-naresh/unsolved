@@ -89,7 +89,10 @@ templ EvolutionContent(v EvolutionView) {
 		<p class="mt-2 text-[15px] leading-relaxed text-stone-600">Every version of this problem, kept side by side. The community's pick is the current one. { evolutionSummary(g) }.</p>
 	</header>
 	if len(g.Nodes) > 0 {
-		@evolutionGraphCard(g, v)
+		<details class="map-disclosure">
+<summary>Explore the revision tree</summary>
+@evolutionGraphCard(g, v)
+</details>
 	}
 	<ol class="mt-6 space-y-3" aria-label="Versions">
 		for i, r := range v.Revisions {

@@ -50,7 +50,7 @@ func discoveryResultCount(n int) string {
 
 // DiscoverySearchResults is the swappable body of /search (the htmx partial).
 templ DiscoverySearchResults(v SearchView) {
-	<div id="search-results">
+	<div id="search-results" aria-live="polite">
 		if v.Query != "" && !v.Unavailable {
 			<div class="flex items-baseline justify-between gap-3">
 				<h2 class="min-w-0 truncate text-base font-semibold">Results for “{ v.Query }”</h2>
@@ -73,7 +73,7 @@ templ DiscoverySearchResults(v SearchView) {
 			if v.Unavailable {
 				<p class="mb-6 flex items-start gap-2.5 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3.5 py-3 text-sm text-amber-800 dark:text-amber-300" role="status">
 					<svg class="mt-0.5 size-4 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="7.5"></circle><path d="M10 6v4.5M10 13.5v.01" stroke-linecap="round"></path></svg>
-					<span>Search is taking a break right now. Here's what's trending instead.</span>
+					<span>Search is unavailable right now. Try again shortly. Trending problems are shown below.</span>
 				</p>
 			}
 			<div class="flex items-center gap-2">
@@ -96,7 +96,7 @@ templ DiscoverySearchResults(v SearchView) {
 templ DiscoveryProblemList(items []ProblemLink) {
 	<ul class="mt-3 space-y-2">
 		for _, it := range items {
-			<li class="card card-hover relative px-4 py-3">
+			<li class="card card-hover relative px-5 py-5">
 				<a href={ it.URL() } class="block font-medium leading-snug text-stone-900 after:absolute after:inset-0 after:rounded-xl hover:text-accent">{ it.Title }</a>
 				<div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-stone-500">
 					@discoveryChips(it)

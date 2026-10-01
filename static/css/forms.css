@@ -23,9 +23,9 @@
   /* textarea with a length meter underneath */
   .field-lined { @apply mt-0 leading-relaxed; }
   .meter-row { @apply mt-1.5 flex items-center gap-3 text-xs text-stone-500; }
-  .meter { @apply h-1 flex-1 overflow-hidden rounded-full bg-stone-100; }
-  .meter > i { @apply block h-full w-0 rounded-full bg-accent/70 transition-[width] duration-200; }
-  .meter > i.over { @apply bg-amber-500; }
+  .length-meter { @apply h-1 flex-1 overflow-hidden rounded-full bg-stone-100; }
+  .length-meter > i { @apply block h-full w-0 rounded-full bg-accent/70 transition-[width] duration-200; }
+  .length-meter > i.over { @apply bg-amber-500; }
   .count { @apply shrink-0 tabular-nums; }
   .count.text-amber-600 { @apply text-amber-700 dark:text-amber-300; }
 
@@ -77,7 +77,6 @@
   .note-info { @apply border-accent/20 bg-accent-soft text-accent-ink; }
 
   /* danger actions */
-  .btn-danger { @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-600 px-3.5 py-2 text-sm font-medium text-red-50 shadow-sm transition hover:bg-red-700 active:scale-[0.98]; }
   .btn-danger-soft { @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-1.5 text-sm font-medium text-red-700 transition hover:bg-red-500/10 active:scale-[0.98] dark:text-red-300; }
 
   /* sign-in provider buttons */

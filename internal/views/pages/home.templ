@@ -69,43 +69,78 @@ func ariaCurrent(on bool) string {
 
 templ Explore(v ExploreView) {
 	@layouts.BaseWide(v.Title) {
-		<div class="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]">
-			<aside class="lg:sticky lg:top-[4.75rem] lg:flex lg:h-[calc(100vh-6rem)] lg:flex-col" aria-label="Problems">
-				<div class="shrink-0">
-					<h1 class="text-xl font-semibold tracking-tight">{ v.Heading }</h1>
-					<p class="mt-0.5 text-sm text-stone-500">{ v.Sub }</p>
-					<nav class="seg mt-3 w-full" aria-label="Sort and filter">
-						<a href={ templ.SafeURL(exploreTabURL("open", v.Domain)) } aria-current={ ariaCurrent(v.Tab == "open") } class="flex-1 text-center">Open</a>
-						<a href={ templ.SafeURL(exploreTabURL("top", v.Domain)) } aria-current={ ariaCurrent(v.Tab == "top") } class="flex-1 text-center">Top</a>
-						<a href={ templ.SafeURL(exploreTabURL("new", v.Domain)) } aria-current={ ariaCurrent(v.Tab == "new") } class="flex-1 text-center">New</a>
-						<a href={ templ.SafeURL(exploreTabURL("solved", v.Domain)) } aria-current={ ariaCurrent(v.Tab == "solved") } class="flex-1 text-center">Solved</a>
-					</nav>
-					if len(v.Domains) > 0 {
-						<div class="-mx-1 mt-3 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]" aria-label="Domains">
-							@domainPill(exploreTabURL(v.Tab, ""), "All", v.Domain == "")
-							for _, d := range v.Domains {
-								@domainPill(exploreTabURL(v.Tab, d.Slug), d.Name, v.Domain == d.Slug)
-							}
-						</div>
-					}
-				</div>
-				<div class="mt-3 lg:-mx-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-1.5 lg:pb-6">
-					if len(v.Pinned) > 0 {
-						<p class="kicker px-3.5 pb-1 pt-1">Start here</p>
-						<ul class="space-y-1">
-							for _, r := range v.Pinned {
-								@partials.ProblemRow(r)
-							}
-						</ul>
-						<p class="kicker px-3.5 pb-1 pt-4">Most wanted</p>
-					}
-					@partials.ProblemList(v.List)
-				</div>
-			</aside>
-			<section id="pane" class="hidden min-w-0 lg:block" aria-live="polite" aria-label="Problem preview">
-				@panePlaceholder()
-			</section>
-		</div>
+		if v.Tab == "open" && v.Domain == "" {
+   <section class="atlas-intro" aria-label="Welcome to Unsolved">
+    <div>
+     <h1>Good work deserves<br/>a better way.</h1>
+     <p>Share the work still done by hand. Find people who understand it. Discover what actually helps.</p>
+     <div class="intro-actions"><a href="/new" class="btn">Share a problem</a><a href="/about" class="btn-ghost">How Unsolved works</a></div>
+    </div>
+    <div class="atlas-path">
+     <ol aria-label="How it works">
+      <li><span class="path-icon">1</span><strong>Show the process</strong><span>What happens today?</span></li>
+      <li><span class="path-icon">2</span><strong>Find a better way</strong><span>Build on each other's ideas.</span></li>
+      <li><span class="path-icon">3</span><strong>Put it to the test</strong><span>Share what worked.</span></li>
+     </ol>
+    </div>
+   </section>
+  }
+  <div class="explore-workspace">
+   <aside class="explore-list" aria-label="Problems">
+    <div class="explore-heading">
+     if v.Tab == "open" && v.Domain == "" {
+      <h2>{ v.Heading }</h2>
+     } else {
+      <h1 class="text-2xl font-semibold tracking-tight">{ v.Heading }</h1>
+     }
+     <span>Made better together</span>
+    </div>
+    <p class="mt-1 text-sm text-stone-500">{ v.Sub }</p>
+    <nav class="seg mt-4 flex w-full" aria-label="Sort and filter">
+     <a href={ templ.SafeURL(exploreTabURL("open", v.Domain)) } aria-current={ ariaCurrent(v.Tab == "open") } class="flex-1 text-center">Open</a>
+     <a href={ templ.SafeURL(exploreTabURL("top", v.Domain)) } aria-current={ ariaCurrent(v.Tab == "top") } class="flex-1 text-center">Top</a>
+     <a href={ templ.SafeURL(exploreTabURL("new", v.Domain)) } aria-current={ ariaCurrent(v.Tab == "new") } class="flex-1 text-center">New</a>
+     <a href={ templ.SafeURL(exploreTabURL("solved", v.Domain)) } aria-current={ ariaCurrent(v.Tab == "solved") } class="flex-1 text-center">Solved</a>
+    </nav>
+    <form action="/problems" method="get" class="domain-filter">
+     if v.Tab == "new" || v.Tab == "top" {
+      <input type="hidden" name="sort" value={ v.Tab }/>
+     } else {
+      <input type="hidden" name="state" value={ v.Tab }/>
+     }
+     <label for="explore-domain">Field</label>
+     <select id="explore-domain" name="domain">
+      <option value="">All fields</option>
+      for _, d := range v.Domains {
+<option value={ d.Slug } selected?={ v.Domain == d.Slug }>{ d.Name }</option>
+}
+     </select>
+     <button type="submit" class="btn-secondary">Apply</button>
+    </form>
+    <div class="problem-feed">
+     if len(v.Pinned) > 0 {
+      <p class="list-section-label">A few places to start</p>
+      <ul>
+       for _, r := range v.Pinned {
+@partials.ProblemRow(r)
+}
+      </ul>
+      if len(v.List.Rows) > 0 {
+<p class="list-section-label">From the community</p>
+}
+     }
+     if len(v.List.Rows) > 0 || len(v.Pinned) == 0 || v.List.MoreURL != "" {
+      @partials.ProblemList(v.List)
+     }
+    </div>
+   </aside>
+   <section class="preview-region" aria-label="Problem preview">
+    <div class="preview-shell">
+     <div class="preview-label"><span>A closer look</span><span>Use J / K to explore</span></div>
+     <div id="pane" aria-live="polite" aria-busy="false">@panePlaceholder()</div>
+    </div>
+   </section>
+  </div>
 	}
 }
 

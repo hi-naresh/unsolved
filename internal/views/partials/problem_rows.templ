@@ -51,10 +51,10 @@ templ ProblemRow(p ProblemRowView) {
 			if p.Excerpt != "" {
 				<p class="clamp-2 mt-1 text-sm leading-snug text-stone-500">{ p.Excerpt }</p>
 			}
-			<div class="mt-2 flex items-center gap-3 text-xs text-stone-500">
+			<div class="row-meta">
 				<span class="inline-flex items-center gap-1 font-medium tabular-nums text-stone-700" title="Votes on the current version">
 					<svg class="size-3.5 text-amber-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3.5 17 12H3l7-8.5Z"></path></svg>
-					{ strconv.Itoa(int(p.Votes)) }
+					{ strconv.Itoa(int(p.Votes)) } votes
 				</span>
 				<span class="inline-flex items-center gap-1 tabular-nums" title="Solutions">
 					<svg class="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7.5 16.5h5M8 13.5a5 5 0 1 1 4 0v1H8v-1Z" stroke-linejoin="round"></path></svg>
@@ -65,7 +65,7 @@ templ ProblemRow(p ProblemRowView) {
 						solutions
 					}
 				</span>
-				<span class="ml-auto truncate">{ AuthorText(p.Author) } · { Ago(p.CreatedAt) }</span>
+				<span class="row-author">{ AuthorText(p.Author) } · { Ago(p.CreatedAt) }</span>
 			</div>
 		</a>
 	</li>

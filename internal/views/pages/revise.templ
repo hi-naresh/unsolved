@@ -44,6 +44,7 @@ templ ReviseProblem(f ReviseProblemForm) {
 					It becomes current only if the community votes it above the current version.
 				</p>
 			</header>
+			@partials.FormErrors(f.Errors)
 			<form method="post" action={ templ.SafeURL("/p/" + f.ProblemID + "/revisions") } data-preview-form class="mt-6 grid grid-cols-1 gap-6 lg:mt-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10">
 				<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
 				<input type="hidden" name="parent_revision_id" value={ f.ParentRevisionID }/>
@@ -89,14 +90,17 @@ templ ReviseProblem(f ReviseProblemForm) {
 						@partials.ProblemFieldError(f.Errors, "display")
 					</li>
 				</ol>
-				<aside class="space-y-4 lg:sticky lg:top-20 lg:self-start" aria-label="Live preview">
+				<aside class="space-y-4 lg:sticky lg:top-28 lg:self-start" aria-label="Live preview">
 					@formPreviewHead(5)
-					@formProblemPreview(f.DomainName)
+					<details class="form-preview-disclosure" open>
+<summary>Preview your problem</summary>
+@formProblemPreview(f.DomainName)
+</details>
 					<button type="submit" class="btn w-full py-2.5 text-[15px]">Submit revision</button>
 					<a href={ templ.SafeURL("/p/" + f.ProblemID) } class="btn-ghost w-full justify-center">Cancel</a>
 				</aside>
 			</form>
 		</div>
-		<script src="/static/js/forms.js" defer></script>
+		<script src="/static/js/forms.js?v=atlas-2" defer></script>
 	}
 }

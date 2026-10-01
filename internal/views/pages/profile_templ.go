@@ -104,7 +104,7 @@ func Profile(p service.Profile) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header class=\"card overflow-hidden\"><div class=\"h-16 bg-gradient-to-r from-accent/25 via-accent/10 to-transparent sm:h-20\" aria-hidden=\"true\"></div><div class=\"px-4 pb-5 sm:px-6\"><div class=\"-mt-9 flex items-end justify-between gap-3\"><span class=\"grid size-18 place-items-center rounded-full border-4 border-white bg-accent-soft text-2xl font-semibold text-accent-ink\" aria-hidden=\"true\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header class=\"card profile-header overflow-hidden\"><div class=\"profile-banner\" aria-hidden=\"true\"></div><div class=\"px-4 pb-5 sm:px-6\"><div class=\"-mt-9 flex items-end justify-between gap-3\"><span class=\"grid size-18 place-items-center rounded-full border-4 border-white bg-accent-soft text-2xl font-semibold text-accent-ink\" aria-hidden=\"true\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

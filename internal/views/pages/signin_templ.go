@@ -52,7 +52,7 @@ func SignIn(next string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mx-auto max-w-sm sm:pt-8\"><div class=\"card p-6 sm:p-7\"><svg class=\"mx-auto size-11\" viewBox=\"0 0 32 32\" aria-hidden=\"true\"><rect width=\"32\" height=\"32\" rx=\"8\" class=\"fill-accent\"></rect> <path d=\"M10 9v8a6 6 0 0 0 12 0V9\" stroke=\"white\" stroke-width=\"3.2\" fill=\"none\" stroke-linecap=\"round\"></path></svg><h1 class=\"mt-4 text-center text-xl font-semibold tracking-tight\">Sign in to Unsolved</h1><p class=\"mt-1.5 text-center text-sm leading-relaxed text-stone-600\">Reading needs no account. To post, revise or vote, sign in with LinkedIn or X. There are no passwords.</p><div class=\"mt-6 space-y-2.5\"><a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"signin-layout mx-auto max-w-md sm:pt-8\"><div class=\"card p-7 sm:p-9\"><svg class=\"mx-auto size-11\" viewBox=\"0 0 32 32\" aria-hidden=\"true\"><rect width=\"32\" height=\"32\" rx=\"8\" class=\"fill-accent\"></rect> <path d=\"M10 9v8a6 6 0 0 0 12 0V9\" stroke=\"white\" stroke-width=\"3.2\" fill=\"none\" stroke-linecap=\"round\"></path></svg><h1 class=\"mt-4 text-center text-3xl font-semibold tracking-tight\">Sign in to Unsolved</h1><p class=\"mt-1.5 text-center text-sm leading-relaxed text-stone-600\">Help make everyday work better. Sign in to share problems, improve ideas and vote for useful solutions.</p><div class=\"mt-6 space-y-2.5\"><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

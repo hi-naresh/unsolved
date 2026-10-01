@@ -5,12 +5,15 @@ import (
 	"strconv"
 )
 
-// voteFlip optimistically flips the button before the request goes out; the
-// server's response replaces the whole form with the truth. On an error
-// response nothing is swapped, so the same script flips it back.
-const voteFlip = "var on=this.classList.toggle('voted');this.setAttribute('aria-pressed',on);var c=this.querySelector('.vote-count');c.textContent=(+c.textContent)+(on?1:-1);"
-
 const voteBase = "group/vote flex w-11 shrink-0 flex-col items-center justify-center rounded-lg border py-1.5 text-sm font-semibold tabular-nums leading-none transition"
+
+func voteLabel(v VoteButtonView) string {
+	action := "Upvote this version"
+	if v.Voted {
+		action = "Remove your vote"
+	}
+	return action + "; " + strconv.Itoa(int(v.Count)) + " votes"
+}
 
 templ voteArrow() {
 	<svg class="size-4 transition group-active/vote:-translate-y-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3.5 17 12H3l7-8.5Z"></path></svg>
@@ -29,10 +32,9 @@ templ VoteButton(v VoteButtonView) {
 					hx-post={ v.URL }
 					hx-target="closest form"
 					hx-swap="outerHTML"
-					hx-on::before-request={ templ.JSUnsafeFuncCall(voteFlip) }
-					hx-on::response-error={ templ.JSUnsafeFuncCall(voteFlip) }
 					aria-pressed={ strconv.FormatBool(v.Voted) }
 					title="Upvote"
+					aria-label={ voteLabel(v) }
 					class={ voteBase, "border-stone-200 bg-white text-stone-500 hover:border-amber-400 hover:text-amber-600 [&.voted]:border-amber-400 [&.voted]:bg-amber-500/12 [&.voted]:text-amber-600", templ.KV("voted", v.Voted) }
 				>
 					@voteArrow()

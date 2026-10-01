@@ -1,0 +1,61 @@
+@layer components {
+  /* surfaces */
+  .card { @apply rounded-[18px] border border-stone-200 bg-white; box-shadow: none; }
+  .card-hover { @apply transition hover:border-stone-300; }
+  .card-hover:hover { box-shadow: var(--u-shadow-lg); }
+  .kicker { @apply text-[13px] font-semibold tracking-normal text-stone-600; }
+  .muted { @apply text-stone-500; }
+
+  /* controls */
+  .field { @apply mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 transition focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15; }
+  .btn { color: #fff; @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold shadow-sm transition hover:brightness-110 active:scale-[0.98] disabled:opacity-50; }
+  .btn-secondary { @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-800 transition hover:border-stone-400 hover:bg-stone-50 active:scale-[0.98]; }
+  .btn-ghost { @apply inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-900; }
+  .error { @apply mt-1 text-sm text-red-600 dark:text-red-400; }
+
+  /* chips */
+  .chip { @apply inline-flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 text-[11px] font-medium text-stone-600; }
+  .chip-accent { @apply border-transparent bg-accent-soft text-accent-ink; }
+  .chip-open { @apply border-transparent bg-sky-500/10 text-sky-700 dark:text-sky-300; }
+  .chip-solved { @apply border-transparent bg-emerald-500/12 text-emerald-700 dark:text-emerald-300; }
+  .chip-invalid { @apply border-transparent bg-red-500/10 text-red-700 dark:text-red-300; }
+  .chip-pinned { @apply border-transparent bg-amber-500/15 text-amber-800 dark:text-amber-300; }
+
+  /* solution kinds: one hue each, used by chips, map nodes and card rails */
+  .kind-process_change { --k: #036b91; }
+  .kind-off_the_shelf { --k: #7240b0; }
+  .kind-custom_software { --k: #8b5700; }
+  .kind-dont_automate { --k: #087458; }
+  .kind-chip { @apply inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold; color: var(--k); background: color-mix(in srgb, var(--k) 12%, transparent); }
+  .kind-dot { @apply inline-block size-2 rounded-full; background: var(--k); }
+  .kind-rail { border-left: 3px solid var(--k); }
+
+  /* segmented tabs */
+  .seg { @apply inline-flex rounded-lg bg-stone-100 p-0.5 text-sm; }
+  .seg > a { @apply rounded-md px-3 py-1 font-medium text-stone-500 transition hover:text-stone-900; }
+  .seg > a[aria-current="page"] { @apply bg-white text-stone-900 shadow-sm; }
+
+  /* long text clamps with a "more" toggle (static/js/app.js) */
+  .clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+  .clamp-2 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  .clamp-5 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden; }
+  html:not(.js) [data-clamp], [data-clamp].open { -webkit-line-clamp: unset; display: block; }
+
+  /* problem list cards in the explorer */
+  .pcard { @apply block rounded-xl border border-transparent px-3.5 py-3 transition hover:border-stone-200 hover:bg-white; }
+  .pcard[aria-current="true"] { @apply border-accent/40 bg-white; box-shadow: 0 0 0 3px color-mix(in srgb, var(--u-accent) 12%, transparent); }
+
+  /* process flow steps */
+  .flow { counter-reset: step; }
+  .flow > li { counter-increment: step; @apply relative pb-4 pl-10; }
+  .flow > li::before { content: counter(step); @apply absolute left-0 top-0 grid size-7 place-items-center rounded-full border border-stone-300 bg-white text-xs font-semibold text-stone-600; }
+  .flow > li:not(:last-child)::after { content: ""; @apply absolute bottom-0 left-[13.5px] top-7 w-px bg-stone-300; }
+  .js .flow > li.flow-hidden { display: none; }
+  .js .flow.open > li.flow-hidden { display: list-item; }
+
+  /* evolution graph: highlight the card a node links to */
+  .rev-card:target { @apply ring-2 ring-accent; }
+
+  /* htmx loading affordance for the preview pane */
+  #pane.htmx-request { opacity: .55; transition: opacity .15s; }
+}

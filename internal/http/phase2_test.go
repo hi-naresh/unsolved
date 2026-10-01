@@ -131,7 +131,7 @@ func TestPhase2SoftSolvedMetaInvalid(t *testing.T) {
 		mustStatus(t, v.postHX("/sr/"+srev+"/vote", nil), http.StatusOK)
 	}
 	eventually(t, 10*time.Second, func() bool {
-		return strings.Contains(body(t, c.get("/p/"+pid)), ">soft-solved</span>")
+		return strings.Contains(body(t, c.get("/p/"+pid)), ">Likely solved</span>")
 	})
 	if countOf(walkList(t, c, "/"), pid) != 0 {
 		t.Fatal("soft-solved problem still on the front page")
@@ -146,7 +146,7 @@ func TestPhase2SoftSolvedMetaInvalid(t *testing.T) {
 	// Unvote → back under the threshold → back on the front page.
 	mustStatus(t, voters[0].postHX("/sr/"+srev+"/vote", nil), http.StatusOK)
 	eventually(t, 10*time.Second, func() bool {
-		return !strings.Contains(body(t, c.get("/p/"+pid)), ">soft-solved</span>")
+		return !strings.Contains(body(t, c.get("/p/"+pid)), ">Likely solved</span>")
 	})
 	if countOf(walkList(t, c, "/"), pid) != 1 {
 		t.Fatal("problem not back on the front page")

@@ -27,3 +27,18 @@ templ ProblemFieldError(errs map[string]string, field string) {
 		</p>
 	}
 }
+
+
+templ FormErrors(errs map[string]string) {
+ if len(errs) > 0 {
+  <div class="form-errors" role="alert" tabindex="-1">
+   <p class="font-semibold">A few details need your attention</p>
+   <ul class="mt-2 space-y-1 text-sm">
+    for _, message := range errs {
+     <li>{ message }</li>
+    }
+   </ul>
+   <p class="mt-2 text-sm text-stone-500">Your answers are still here. Check the highlighted fields below.</p>
+  </div>
+ }
+}

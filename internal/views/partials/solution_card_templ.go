@@ -37,7 +37,7 @@ func SolutionCard(s SolutionView) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var2 = []any{"card kind-rail kind-" + s.Kind, "scroll-mt-24 p-4"}
+		var templ_7745c5c3_Var2 = []any{"card kind-rail kind-" + s.Kind, "solution-card scroll-mt-24"}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var2...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -62,7 +62,7 @@ func SolutionCard(s SolutionView) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.ResolveAttributeValue("s-" + s.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/partials/solution_card.templ`, Line: 12, Col: 88}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/partials/solution_card.templ`, Line: 12, Col: 98}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 		if templ_7745c5c3_Err != nil {
@@ -312,7 +312,7 @@ func SolutionCard(s SolutionView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</fieldset><textarea name=\"note\" rows=\"2\" maxlength=\"1000\" class=\"field\" placeholder=\"What happened? (optional)\"></textarea> <button type=\"submit\" class=\"btn\">Save outcome</button></form></details> <details class=\"w-full [&:not([open])]:w-auto\"><summary class=\"btn-ghost -ml-2.5 cursor-pointer list-none text-xs [&::-webkit-details-marker]:hidden\"><svg class=\"size-3.5\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"m12.5 4.5 3 3L7 16H4v-3l8.5-8.5Z\" stroke-linejoin=\"round\"></path></svg> Suggest a revision</summary>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</fieldset><textarea name=\"note\" rows=\"2\" maxlength=\"1000\" class=\"field\" aria-label=\"What happened? (optional)\" placeholder=\"What happened? (optional)\"></textarea> <button type=\"submit\" class=\"btn\">Save outcome</button></form></details> <details class=\"w-full [&:not([open])]:w-auto\"><summary class=\"btn-ghost -ml-2.5 cursor-pointer list-none text-xs [&::-webkit-details-marker]:hidden\"><svg class=\"size-3.5\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"m12.5 4.5 3 3L7 16H4v-3l8.5-8.5Z\" stroke-linejoin=\"round\"></path></svg> Suggest a revision</summary>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -401,7 +401,7 @@ func outcomeBar(s SolutionView) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		t := Outcomes(s)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "<div class=\"mt-3\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "<div class=\"outcome-evidence\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
