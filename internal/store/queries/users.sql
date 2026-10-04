@@ -21,9 +21,20 @@ SELECT * FROM users WHERE handle = $1;
 UPDATE users SET handle = $2, in_directory = $3
 WHERE id = $1 AND deleted_at IS NULL;
 
+-- name: CompleteUserWelcome :exec
+UPDATE users
+SET handle = sqlc.arg(handle), in_directory = sqlc.arg(in_directory),
+    contribution_preference = sqlc.arg(contribution_preference),
+    onboarding_completed = sqlc.arg(contribution_preference)::text <> ''
+WHERE id = sqlc.arg(id) AND deleted_at IS NULL;
+
 -- name: UpdateUserSettings :exec
 UPDATE users
-SET handle = $2, in_directory = $3, declared_history = $4, email = $5
+SET handle = sqlc.arg(handle), in_directory = sqlc.arg(in_directory),
+    declared_history = sqlc.arg(declared_history), email = sqlc.arg(email),
+    contribution_preference = CASE WHEN sqlc.arg(contribution_preference)::text = ''
+      THEN contribution_preference ELSE sqlc.arg(contribution_preference)::text END,
+    onboarding_completed = onboarding_completed OR sqlc.arg(contribution_preference)::text <> ''
 WHERE id = $1 AND deleted_at IS NULL;
 
 -- name: ListIdentitiesByUser :many

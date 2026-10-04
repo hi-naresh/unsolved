@@ -87,17 +87,10 @@ templ ProblemContent(v ProblemPageView) {
  <div class="problem-layout">
 		<article id="problem" data-problem-id={ v.ID } class="problem-document">
 			@problemHeader(v, true)
+			@problemRefinementActions(v)
 			@problemBody(v, 0)
 			<div class="mt-6 flex flex-wrap items-center gap-2 border-t border-stone-200 pt-4 text-sm">
-				<a href={ templ.SafeURL("/p/" + v.ID + "/evolution") } class="btn-ghost -ml-2.5">
-					<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="5" cy="5" r="2"></circle><circle cx="5" cy="15" r="2"></circle><circle cx="15" cy="10" r="2"></circle><path d="M5 7v6M7 5c4 0 6 2 6 5M7 15c4 0 6-2 6-5"></path></svg>
-					How this evolved
-				</a>
 				if v.CanWrite {
-					<a href={ templ.SafeURL("/p/" + v.ID + "/revise") } class="btn-ghost">
-						<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m12.5 4.5 3 3L7 16H4v-3l8.5-8.5Z" stroke-linejoin="round"></path></svg>
-						Revise
-					</a>
 					<form method="post" action={ templ.SafeURL("/p/" + v.ID + "/fork") } class="inline">
 						<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
 						<input type="hidden" name="revision_id" value={ v.RevisionID }/>
@@ -145,6 +138,7 @@ templ ProblemPreview(v ProblemPageView) {
 	<article class="problem-preview" data-problem-id={ v.ID }>
 		<div class="p-6 pb-2">
 			@problemHeader(v, false)
+			@problemRefinementActions(v)
 		</div>
 		<div class="px-6">
 			@problemGlance(v)
@@ -195,6 +189,20 @@ templ ProblemPreview(v ProblemPageView) {
 			<a href={ templ.SafeURL("/p/" + v.ID) } class="btn ml-auto">Open problem</a>
 		</div>
 	</article>
+}
+
+// Visitors can discover refinement before signing in; the route preserves
+// their destination. Suspended members and invalid problems stay read-only.
+templ problemRefinementActions(v ProblemPageView) {
+	<nav class="mt-4 flex flex-wrap items-center gap-2" aria-label="Improve this problem">
+		if v.State != "invalid" && (!v.SignedIn || v.CanWrite) {
+			<a href={ templ.SafeURL("/p/" + v.ID + "/revise") } class="btn-secondary">
+				<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m12.5 4.5 3 3L7 16H4v-3l8.5-8.5Z" stroke-linejoin="round"></path></svg>
+				Refine or correct
+			</a>
+		}
+		<a href={ templ.SafeURL("/p/" + v.ID + "/evolution") } class="btn-ghost">Revision history</a>
+	</nav>
 }
 
 // problemHeader: chips, vote + title, byline.

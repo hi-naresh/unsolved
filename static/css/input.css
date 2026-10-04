@@ -1,4 +1,16 @@
 @import "tailwindcss";
+
+/* Revision comparisons keep each field readable on phones and show the two
+   versions alongside one another when there is enough room. */
+.revision-comparison-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 640px) {
+  .revision-comparison-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @source "../../internal/views";
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 @import "./primitives.css";

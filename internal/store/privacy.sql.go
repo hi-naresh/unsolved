@@ -24,6 +24,7 @@ const exportUserData = `-- name: ExportUserData :one
 SELECT json_build_object(
   'user', (SELECT row_to_json(x) FROM (
       SELECT id, handle, display_name, in_directory, declared_history, email,
+             contribution_preference, onboarding_completed,
              suspended_at, created_at
       FROM users t WHERE t.id = $1) x),
   'identities', (SELECT coalesce(json_agg(x ORDER BY x.created_at), '[]'::json) FROM (
@@ -83,7 +84,8 @@ func (q *Queries) ExportUserData(ctx context.Context, userID uuid.UUID) (string,
 const scrubUser = `-- name: ScrubUser :execrows
 UPDATE users
 SET handle = $1, display_name = 'deleted user', declared_history = NULL,
-    email = NULL, in_directory = false, deleted_at = now()
+    email = NULL, in_directory = false, contribution_preference = '',
+    onboarding_completed = false, deleted_at = now()
 WHERE id = $2 AND deleted_at IS NULL
 `
 

@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/hi-naresh/unsolved/internal/auth"
+	"github.com/hi-naresh/unsolved/internal/config"
+	"github.com/hi-naresh/unsolved/internal/store"
 )
 
 // fakeProviders is an httptest server playing LinkedIn (an OIDC issuer with
@@ -40,6 +42,9 @@ type fakeGrant struct {
 	uid       string
 	name      string
 	username  string // X only
+	issuer    string
+	audience  string
+	expired   bool
 }
 
 func newFakeProviders(t *testing.T) *fakeProviders {
@@ -72,6 +77,13 @@ func newFakeProviders(t *testing.T) *fakeProviders {
 			"n": authB64(f.key.N.Bytes()), "e": authB64(big.NewInt(int64(f.key.E)).Bytes()),
 		}}})
 	})
+	mux.HandleFunc("GET /google/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+		iss := f.srv.URL + "/google"
+		authWriteJSON(w, map[string]any{"issuer": iss, "authorization_endpoint": iss + "/authorize", "token_endpoint": iss + "/token", "jwks_uri": iss + "/jwks", "response_types_supported": []string{"code"}, "subject_types_supported": []string{"public"}, "id_token_signing_alg_values_supported": []string{"RS256"}})
+	})
+	mux.HandleFunc("GET /google/jwks", func(w http.ResponseWriter, r *http.Request) {
+		authWriteJSON(w, map[string]any{"keys": []map[string]string{{"kty": "RSA", "kid": "k1", "alg": "RS256", "use": "sig", "n": authB64(f.key.N.Bytes()), "e": authB64(big.NewInt(int64(f.key.E)).Bytes())}}})
+	})
 	mux.HandleFunc("POST /li/token", func(w http.ResponseWriter, r *http.Request) {
 		// LinkedIn: client credentials in the form body.
 		if r.PostFormValue("client_id") != "li-client" || r.PostFormValue("client_secret") != "li-secret" {
@@ -85,8 +97,20 @@ func newFakeProviders(t *testing.T) *fakeProviders {
 		}
 		authWriteJSON(w, map[string]any{
 			"access_token": "li-access", "token_type": "Bearer", "expires_in": 3600,
-			"id_token": f.idToken(g),
+			"id_token": f.idToken(g, "linkedin"),
 		})
+	})
+	mux.HandleFunc("POST /google/token", func(w http.ResponseWriter, r *http.Request) {
+		if r.PostFormValue("client_id") != "google-client" || r.PostFormValue("client_secret") != "google-secret" {
+			http.Error(w, `{"error":"invalid_client"}`, http.StatusUnauthorized)
+			return
+		}
+		g, ok := f.redeem(r)
+		if !ok {
+			http.Error(w, `{"error":"invalid_grant"}`, http.StatusBadRequest)
+			return
+		}
+		authWriteJSON(w, map[string]any{"access_token": "google-access", "token_type": "Bearer", "expires_in": 3600, "id_token": f.idToken(g, "google")})
 	})
 	mux.HandleFunc("POST /x/token", func(w http.ResponseWriter, r *http.Request) {
 		// X confidential client: HTTP Basic.
@@ -115,6 +139,59 @@ func newFakeProviders(t *testing.T) *fakeProviders {
 		}
 		authWriteJSON(w, map[string]any{"data": map[string]string{"id": g.uid, "name": g.name, "username": g.username}})
 	})
+	mux.HandleFunc("POST /github/token", func(w http.ResponseWriter, r *http.Request) {
+		if r.PostFormValue("client_id") != "github-client" || r.PostFormValue("client_secret") != "github-secret" {
+			http.Error(w, `{"error":"invalid_client"}`, http.StatusUnauthorized)
+			return
+		}
+		g, ok := f.redeem(r)
+		if !ok {
+			http.Error(w, `{"error":"invalid_grant"}`, http.StatusBadRequest)
+			return
+		}
+		tok := "github-access-" + g.uid
+		f.mu.Lock()
+		f.tokens[tok] = g
+		f.mu.Unlock()
+		authWriteJSON(w, map[string]any{"access_token": tok, "token_type": "bearer"})
+	})
+	mux.HandleFunc("GET /github/user", func(w http.ResponseWriter, r *http.Request) {
+		f.mu.Lock()
+		g, ok := f.tokens[strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")]
+		f.mu.Unlock()
+		if !ok {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		authWriteJSON(w, map[string]any{"id": g.uid, "login": g.username, "name": g.name})
+	})
+	mux.HandleFunc("POST /reddit/token", func(w http.ResponseWriter, r *http.Request) {
+		id, secret, ok := r.BasicAuth()
+		if !ok || id != "reddit-client" || secret != "reddit-secret" || r.Header.Get("User-Agent") != "web:unsolved-tests:v1 (by /u/test_operator)" {
+			http.Error(w, `{"error":"invalid_client"}`, http.StatusUnauthorized)
+			return
+		}
+		g, ok := f.redeem(r)
+		if !ok {
+			http.Error(w, `{"error":"invalid_grant"}`, http.StatusBadRequest)
+			return
+		}
+		tok := "reddit-access-" + g.uid
+		f.mu.Lock()
+		f.tokens[tok] = g
+		f.mu.Unlock()
+		authWriteJSON(w, map[string]any{"access_token": tok, "token_type": "bearer"})
+	})
+	mux.HandleFunc("GET /reddit/me", func(w http.ResponseWriter, r *http.Request) {
+		f.mu.Lock()
+		g, ok := f.tokens[strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")]
+		f.mu.Unlock()
+		if !ok || r.Header.Get("User-Agent") != "web:unsolved-tests:v1 (by /u/test_operator)" {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		authWriteJSON(w, map[string]any{"id": g.uid, "name": g.username})
+	})
 	f.srv = httptest.NewServer(mux)
 	t.Cleanup(f.srv.Close)
 	return f
@@ -127,6 +204,13 @@ func (f *fakeProviders) endpoints() auth.Endpoints {
 		XTokenURL:      f.srv.URL + "/x/token",
 		XUserURL:       f.srv.URL + "/x/users/me",
 		XProfileBase:   "https://x.com/",
+		GoogleIssuer:   f.srv.URL + "/google",
+		GitHubAuthURL:  f.srv.URL + "/github/authorize",
+		GitHubTokenURL: f.srv.URL + "/github/token",
+		GitHubUserURL:  f.srv.URL + "/github/user",
+		RedditAuthURL:  f.srv.URL + "/reddit/authorize",
+		RedditTokenURL: f.srv.URL + "/reddit/token",
+		RedditUserURL:  f.srv.URL + "/reddit/me",
 	}
 }
 
@@ -143,7 +227,7 @@ func (f *fakeProviders) redeem(r *http.Request) (fakeGrant, bool) {
 	return g, authB64(sum[:]) == g.challenge
 }
 
-func (f *fakeProviders) idToken(g fakeGrant) string {
+func (f *fakeProviders) idToken(g fakeGrant, provider string) string {
 	key := f.key
 	f.mu.Lock()
 	if f.badSignature {
@@ -151,10 +235,21 @@ func (f *fakeProviders) idToken(g fakeGrant) string {
 	}
 	f.mu.Unlock()
 	now := time.Now()
+	issuer, audience := f.srv.URL+"/"+map[string]string{"linkedin": "li", "google": "google"}[provider], map[string]string{"linkedin": "li-client", "google": "google-client"}[provider]
+	if g.issuer != "" {
+		issuer = g.issuer
+	}
+	if g.audience != "" {
+		audience = g.audience
+	}
+	exp := now.Add(time.Hour)
+	if g.expired {
+		exp = now.Add(-time.Hour)
+	}
 	header, _ := json.Marshal(map[string]string{"alg": "RS256", "kid": "k1", "typ": "JWT"})
 	claims, _ := json.Marshal(map[string]any{
-		"iss": f.srv.URL + "/li", "sub": g.uid, "aud": "li-client",
-		"iat": now.Unix(), "exp": now.Add(time.Hour).Unix(), "name": g.name,
+		"iss": issuer, "sub": g.uid, "aud": audience,
+		"iat": now.Unix(), "exp": exp.Unix(), "name": g.name,
 	})
 	input := authB64(header) + "." + authB64(claims)
 	sum := sha256.Sum256([]byte(input))
@@ -189,14 +284,14 @@ func (f *fakeProviders) signIn(c *testClient, provider, next string, g fakeGrant
 		c.t.Fatal(err)
 	}
 	q := loc.Query()
-	if !strings.HasPrefix(loc.String(), f.srv.URL+map[string]string{"linkedin": "/li/authorize", "x": "/x/authorize"}[provider]) {
+	if !strings.HasPrefix(loc.String(), f.srv.URL+map[string]string{"linkedin": "/li/authorize", "x": "/x/authorize", "google": "/google/authorize", "github": "/github/authorize", "reddit": "/reddit/authorize"}[provider]) {
 		c.t.Fatalf("start redirected to %s", loc)
 	}
 	if q.Get("code_challenge_method") != "S256" || q.Get("state") == "" ||
 		q.Get("redirect_uri") != c.app.Cfg.BaseURL+"/auth/"+provider+"/callback" {
 		c.t.Fatalf("authorize URL missing PKCE/state/redirect: %s", loc)
 	}
-	wantScope := map[string]string{"linkedin": "openid profile", "x": "users.read tweet.read"}[provider]
+	wantScope := map[string]string{"linkedin": "openid profile", "x": "users.read tweet.read", "google": "openid profile", "github": "read:user", "reddit": "identity"}[provider]
 	if q.Get("scope") != wantScope {
 		c.t.Fatalf("scope %q, want %q", q.Get("scope"), wantScope)
 	}
@@ -231,10 +326,16 @@ func authHasSession(c *testClient) bool {
 
 func TestSignInFlows(t *testing.T) {
 	app, f := newAuthTestApp(t)
-	for _, provider := range []string{"linkedin", "x"} {
+	for _, provider := range []string{"linkedin", "x", "google", "github", "reddit"} {
 		t.Run(provider, func(t *testing.T) {
 			uid := fmt.Sprintf("%s-uid-%d", provider, time.Now().UnixNano())
+			if provider == "github" {
+				uid = fmt.Sprint(time.Now().UnixNano())
+			}
 			g := fakeGrant{uid: uid, name: "Ada Lovelace", username: "ada_l"}
+			if provider == "github" {
+				g.username = "ada-l"
+			}
 
 			// New user: signed in, sent to /welcome with next preserved.
 			c := app.anon(t)
@@ -263,7 +364,11 @@ func TestSignInFlows(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if p.DisplayName != "Ada Lovelace" || !p.InDirectory {
+			wantName := "Ada Lovelace"
+			if provider == "reddit" {
+				wantName = "ada_l"
+			}
+			if p.DisplayName != wantName || !p.InDirectory {
 				t.Fatalf("user after welcome: %+v", p)
 			}
 			// Stored identity: X gets a profile URL from the username; LinkedIn's OIDC claims have none.
@@ -272,6 +377,15 @@ func TestSignInFlows(t *testing.T) {
 			}
 			if provider == "linkedin" && len(p.Links) != 0 {
 				t.Fatalf("linkedin should store no profile URL: %+v", p.Links)
+			}
+			if provider == "google" && len(p.Links) != 0 {
+				t.Fatalf("google should store no profile URL: %+v", p.Links)
+			}
+			if provider == "github" && (len(p.Links) != 1 || p.Links[0].URL != "https://github.com/ada-l") {
+				t.Fatalf("github profile link: %+v", p.Links)
+			}
+			if provider == "reddit" && (len(p.Links) != 1 || p.Links[0].URL != "https://www.reddit.com/user/ada_l") {
+				t.Fatalf("reddit profile link: %+v", p.Links)
 			}
 
 			// Returning user: straight to next, same account.
@@ -391,6 +505,59 @@ func TestSignInRejectsTampering(t *testing.T) {
 		state := startState(c, "linkedin")
 		expectFail(t, c, "/auth/linkedin/callback?code=code-"+state+"&state="+url.QueryEscape(state))
 	})
+	t.Run("google bad id token signature", func(t *testing.T) {
+		f.mu.Lock()
+		f.badSignature = true
+		f.mu.Unlock()
+		defer func() { f.mu.Lock(); f.badSignature = false; f.mu.Unlock() }()
+		c := app.anon(t)
+		resp := f.signIn(c, "google", "/", fakeGrant{uid: "bad-google-signature", name: "Mallory"})
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusBadRequest || authHasSession(c) {
+			t.Fatalf("forged Google token: status %d", resp.StatusCode)
+		}
+	})
+	for _, tc := range []struct {
+		name  string
+		grant fakeGrant
+	}{
+		{"issuer", fakeGrant{uid: "google-issuer", name: "Mallory", issuer: "https://wrong.example"}},
+		{"audience", fakeGrant{uid: "google-audience", name: "Mallory", audience: "wrong-client"}},
+		{"expiry", fakeGrant{uid: "google-expiry", name: "Mallory", expired: true}},
+	} {
+		t.Run("google wrong "+tc.name, func(t *testing.T) {
+			c := app.anon(t)
+			resp := f.signIn(c, "google", "/", tc.grant)
+			resp.Body.Close()
+			if resp.StatusCode != http.StatusBadRequest || authHasSession(c) {
+				t.Fatalf("invalid Google token: status %d, session %v", resp.StatusCode, authHasSession(c))
+			}
+		})
+	}
+	t.Run("github malformed identity", func(t *testing.T) {
+		c := app.anon(t)
+		resp := f.signIn(c, "github", "/", fakeGrant{uid: "not-an-id", name: "Mallory", username: "mal"})
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusBadRequest || authHasSession(c) {
+			t.Fatalf("malformed GitHub identity: status %d", resp.StatusCode)
+		}
+	})
+	t.Run("github negative id", func(t *testing.T) {
+		c := app.anon(t)
+		resp := f.signIn(c, "github", "/", fakeGrant{uid: "-1", name: "Mallory", username: "mal"})
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusBadRequest || authHasSession(c) {
+			t.Fatalf("negative GitHub ID: status %d", resp.StatusCode)
+		}
+	})
+	t.Run("reddit empty identity", func(t *testing.T) {
+		c := app.anon(t)
+		resp := f.signIn(c, "reddit", "/", fakeGrant{uid: "", name: "Mallory", username: "mal"})
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusBadRequest || authHasSession(c) {
+			t.Fatalf("empty Reddit identity: status %d", resp.StatusCode)
+		}
+	})
 	t.Run("open redirect in next", func(t *testing.T) {
 		for _, next := range []string{"//evil.example", "https://evil.example", `/\evil.example`, "evil"} {
 			c := app.anon(t)
@@ -403,12 +570,35 @@ func TestSignInRejectsTampering(t *testing.T) {
 	})
 	t.Run("unknown provider", func(t *testing.T) {
 		c := app.anon(t)
-		resp := c.get("/auth/github/start")
+		resp := c.get("/auth/unknown/start")
 		resp.Body.Close()
 		if resp.StatusCode != http.StatusNotFound {
 			t.Fatalf("want 404, got %d", resp.StatusCode)
 		}
 	})
+}
+
+func TestSameNameAndUIDAcrossProvidersStayDistinct(t *testing.T) {
+	app, f := newAuthTestApp(t)
+	for _, provider := range []string{"github", "reddit"} {
+		c := app.anon(t)
+		resp := f.signIn(c, provider, "/", fakeGrant{uid: "123456789", name: "Same Name", username: "same_name"})
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusSeeOther || !authHasSession(c) {
+			t.Fatalf("%s: status %d", provider, resp.StatusCode)
+		}
+	}
+	github, err := app.Store.GetIdentity(t.Context(), store.GetIdentityParams{Provider: store.ProviderGithub, ProviderUid: "123456789"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reddit, err := app.Store.GetIdentity(t.Context(), store.GetIdentityParams{Provider: store.ProviderReddit, ProviderUid: "123456789"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if github.UserID == reddit.UserID {
+		t.Fatal("matching provider uid and name merged separate accounts")
+	}
 }
 
 func TestSignInRateLimit(t *testing.T) {
@@ -450,6 +640,51 @@ func TestSignInPage(t *testing.T) {
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/problems" {
 		t.Fatalf("signed-in /signin: %d %q", resp.StatusCode, resp.Header.Get("Location"))
+	}
+}
+
+func TestUnconfiguredSignIn(t *testing.T) {
+	app := newTestApp(t, func(c *config.Config) {
+		c.LinkedInClientID, c.LinkedInClientSecret = "replace-me", "replace-me"
+		c.XClientID, c.XClientSecret = "", ""
+		c.GoogleClientID, c.GoogleClientSecret = "", ""
+		c.GitHubClientID, c.GitHubClientSecret = "", ""
+		c.RedditClientID, c.RedditClientSecret = "", ""
+	})
+	c := app.anon(t)
+	resp := c.get("/signin?next=/new")
+	got := body(t, resp)
+	if resp.StatusCode != http.StatusOK || !strings.Contains(got, "Sign-in is not available yet") {
+		t.Fatal("unconfigured sign-in must explain availability")
+	}
+	if strings.Contains(got, "/auth/linkedin/start") || strings.Contains(got, "/auth/x/start") || strings.Contains(got, "/auth/google/start") || strings.Contains(got, "/auth/github/start") || strings.Contains(got, "/auth/reddit/start") {
+		t.Fatal("unconfigured providers must not offer sign-in links")
+	}
+	for _, provider := range []string{"linkedin", "x", "google", "github", "reddit"} {
+		resp = c.get("/auth/" + provider + "/start")
+		got = body(t, resp)
+		if resp.StatusCode != http.StatusServiceUnavailable || resp.Header.Get("Location") != "" || !strings.Contains(got, "Sign-in is not available yet") {
+			t.Errorf("unconfigured %s must stay local and explain availability; status %d", provider, resp.StatusCode)
+		}
+		for _, cookie := range resp.Cookies() {
+			if cookie.Name == auth.StateCookie {
+				t.Error("unconfigured provider must not initiate OAuth state")
+			}
+		}
+	}
+}
+
+func TestSignInShowsOnlyConfiguredProviders(t *testing.T) {
+	app := newTestApp(t, func(c *config.Config) {
+		c.LinkedInClientSecret = "replace-me"
+		c.GoogleClientSecret = "replace-me"
+		c.GitHubClientSecret = ""
+		c.RedditClientID = "replace-me"
+	})
+	resp := app.anon(t).get("/signin?next=%2Fnew")
+	got := body(t, resp)
+	if strings.Contains(got, "/auth/linkedin/start") || !strings.Contains(got, "/auth/x/start?next=%2Fnew") || strings.Contains(got, "/auth/google/start") || strings.Contains(got, "/auth/github/start") || strings.Contains(got, "/auth/reddit/start") {
+		t.Fatal("only configured providers should be offered, with the return path preserved")
 	}
 }
 

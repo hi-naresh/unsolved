@@ -137,6 +137,9 @@ type Provider string
 const (
 	ProviderLinkedin Provider = "linkedin"
 	ProviderX        Provider = "x"
+	ProviderGoogle   Provider = "google"
+	ProviderGithub   Provider = "github"
+	ProviderReddit   Provider = "reddit"
 )
 
 func (e *Provider) Scan(src interface{}) error {
@@ -177,7 +180,10 @@ func (ns NullProvider) Value() (driver.Value, error) {
 func (e Provider) Valid() bool {
 	switch e {
 	case ProviderLinkedin,
-		ProviderX:
+		ProviderX,
+		ProviderGoogle,
+		ProviderGithub,
+		ProviderReddit:
 		return true
 	}
 	return false
@@ -187,6 +193,9 @@ func AllProviderValues() []Provider {
 	return []Provider{
 		ProviderLinkedin,
 		ProviderX,
+		ProviderGoogle,
+		ProviderGithub,
+		ProviderReddit,
 	}
 }
 
@@ -649,15 +658,17 @@ type TrendingProblem struct {
 }
 
 type User struct {
-	ID              uuid.UUID
-	Handle          string
-	DisplayName     string
-	InDirectory     bool
-	DeclaredHistory *string
-	SuspendedAt     *time.Time
-	DeletedAt       *time.Time
-	CreatedAt       time.Time
-	Email           *string
+	ID                     uuid.UUID
+	Handle                 string
+	DisplayName            string
+	InDirectory            bool
+	DeclaredHistory        *string
+	SuspendedAt            *time.Time
+	DeletedAt              *time.Time
+	CreatedAt              time.Time
+	Email                  *string
+	ContributionPreference string
+	OnboardingCompleted    bool
 }
 
 type UserDomainStanding struct {

@@ -25,17 +25,22 @@ func (h *Handlers) welcomePage(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	f := pages.WelcomeForm{Handle: u.Handle, InDirectory: u.InDirectory, Next: auth.SafeNext(r.URL.Query().Get("next"))}
+	f := pages.WelcomeForm{Handle: u.Handle, InDirectory: u.InDirectory, ContributionPreference: u.ContributionPreference, Next: auth.SafeNext(r.URL.Query().Get("next"))}
 	return h.render(w, r, http.StatusOK, pages.Welcome(f), nil)
 }
 
 func (h *Handlers) welcomeSubmit(w http.ResponseWriter, r *http.Request) error {
 	f := pages.WelcomeForm{
-		Handle:      r.PostFormValue("handle"),
-		InDirectory: r.PostFormValue("in_directory") != "",
-		Next:        auth.SafeNext(r.PostFormValue("next")),
+		Handle:                 r.PostFormValue("handle"),
+		InDirectory:            r.PostFormValue("in_directory") != "",
+		ContributionPreference: r.PostFormValue("contribution_preference"),
+		Next:                   auth.SafeNext(r.PostFormValue("next")),
 	}
-	err := h.Svc.CompleteWelcome(r.Context(), auth.UserFrom(r.Context()).ID, f.Handle, f.InDirectory)
+	if r.PostFormValue("action") == "skip" {
+		redirect(w, r, f.Next)
+		return nil
+	}
+	err := h.Svc.CompleteWelcomeWithPreference(r.Context(), auth.UserFrom(r.Context()).ID, f.Handle, f.InDirectory, f.ContributionPreference)
 	var ve service.ErrValidation
 	if errors.As(err, &ve) {
 		f.Errors = map[string]string{ve.Field: ve.Msg}
@@ -44,7 +49,16 @@ func (h *Handlers) welcomeSubmit(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	redirect(w, r, f.Next)
+	to := f.Next
+	if to == "/" {
+		switch f.ContributionPreference {
+		case "identifier":
+			to = "/new"
+		case "solver", "both":
+			to = "/problems"
+		}
+	}
+	redirect(w, r, to)
 	return nil
 }
 

@@ -33,6 +33,7 @@ type EvolutionView struct {
 	Title      string
 	DomainName string
 	CanWrite   bool
+	MinVotes   int32
 	Revisions  []EvolutionRevision
 }
 
@@ -87,6 +88,7 @@ templ EvolutionContent(v EvolutionView) {
 		</p>
 		<h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">How this evolved</h1>
 		<p class="mt-2 text-[15px] leading-relaxed text-stone-600">Every version of this problem, kept side by side. The community's pick is the current one. { evolutionSummary(g) }.</p>
+		@revisionSelectionRule(v.MinVotes)
 	</header>
 	if len(g.Nodes) > 0 {
 		<details class="map-disclosure">
@@ -240,6 +242,9 @@ templ evolutionCard(v EvolutionView, g EvolutionGraph, i int, r EvolutionRevisio
 					}
 				</div>
 				<div class="mt-2 flex flex-wrap items-center gap-x-1 text-sm">
+					if !n.IsRoot {
+						@revisionComparison(r, v.Revisions[n.Parent], evolutionVersionLabel(g, n.Parent))
+					}
 					<details class="rev-full group open:w-full">
 						<summary class="btn-ghost -ml-2.5 w-fit cursor-pointer list-none text-xs [&::-webkit-details-marker]:hidden">
 							<svg class="size-3.5 transition group-open:rotate-90" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m8 5 5 5-5 5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
@@ -265,7 +270,7 @@ templ evolutionCard(v EvolutionView, g EvolutionGraph, i int, r EvolutionRevisio
 					if v.CanWrite {
 						<a href={ templ.SafeURL("/p/" + v.ProblemID + "/revise?from=" + r.ID) } class="btn-ghost text-xs">
 							<svg class="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M13.5 3.5 16.5 6.5 7 16H4v-3z" stroke-linejoin="round"></path></svg>
-							Revise<span class="hidden sm:inline">from this version</span>
+							Refine this version
 						</a>
 						<form method="post" action={ templ.SafeURL("/p/" + v.ProblemID + "/fork") } class="inline">
 							<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>

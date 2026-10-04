@@ -20,13 +20,14 @@ type ReviseProblemForm struct {
 	Display          string
 	Handle           string
 	Errors           map[string]string
+	MinVotes         int32
 }
 
 // formWhyNoteSuggestions are one-tap starters for the why-note (forms.js).
 var formWhyNoteSuggestions = []string{"Added a missing step", "Made the pain clearer", "Shortened it", "Fixed a mistake"}
 
 templ ReviseProblem(f ReviseProblemForm) {
-	@layouts.BaseWide("Revise problem") {
+	@layouts.BaseWide("Refine or correct") {
 		<div class="mx-auto max-w-6xl sm:pt-3">
 			<a href={ templ.SafeURL("/p/" + f.ProblemID) } class="btn-ghost -ml-2.5 text-stone-500">
 				<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5l-5 5 5 5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
@@ -34,15 +35,16 @@ templ ReviseProblem(f ReviseProblemForm) {
 			</a>
 			<header class="mt-2 max-w-2xl">
 				<p class="kicker">Revision · { f.DomainName }</p>
-				<h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Revise this problem</h1>
+				<h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Refine or correct this problem</h1>
 				<p class="mt-2 text-[15px] leading-relaxed text-stone-600">
 					if f.ParentIsCurrent {
 						Your revision starts from the current version.
 					} else {
 						Your revision starts from an earlier version, not the current one.
 					}
-					It becomes current only if the community votes it above the current version.
+					Clarify what's missing or correct a mistake. The original stays in the revision history.
 				</p>
+				@revisionSelectionRule(f.MinVotes)
 			</header>
 			@partials.FormErrors(f.Errors)
 			<form method="post" action={ templ.SafeURL("/p/" + f.ProblemID + "/revisions") } data-preview-form class="mt-6 grid grid-cols-1 gap-6 lg:mt-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10">

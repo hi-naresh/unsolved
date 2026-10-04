@@ -1,0 +1,25 @@
+package partials
+
+templ ContributorPreference(selected, errorMessage string) {
+	<fieldset class="space-y-3" aria-describedby="contribution-help">
+		<legend class="text-sm font-semibold">How would you like to contribute?</legend>
+		<p id="contribution-help" class="hint">Choose a starting point. Everyone can refine, vote and contribute.</p>
+		<div class="grid gap-2">
+			<label class="flex cursor-pointer items-start gap-2 rounded-lg border border-stone-200 p-3 transition hover:bg-stone-50 has-[:checked]:border-accent has-[:checked]:bg-accent-soft focus-within:ring-2 focus-within:ring-accent">
+				<input type="radio" name="contribution_preference" value="identifier" checked?={ selected == "identifier" } class="mt-1"/>
+				<span class="text-sm"><span class="block font-medium">Identify problems</span><span class="mt-0.5 block text-stone-500">Describe real difficulties and improve problem statements.</span></span>
+			</label>
+			<label class="flex cursor-pointer items-start gap-2 rounded-lg border border-stone-200 p-3 transition hover:bg-stone-50 has-[:checked]:border-accent has-[:checked]:bg-accent-soft focus-within:ring-2 focus-within:ring-accent">
+				<input type="radio" name="contribution_preference" value="solver" checked?={ selected == "solver" } class="mt-1"/>
+				<span class="text-sm"><span class="block font-medium">Solve problems</span><span class="mt-0.5 block text-stone-500">Propose approaches and add evidence.</span></span>
+			</label>
+			<label class="flex cursor-pointer items-start gap-2 rounded-lg border border-stone-200 p-3 transition hover:bg-stone-50 has-[:checked]:border-accent has-[:checked]:bg-accent-soft focus-within:ring-2 focus-within:ring-accent">
+				<input type="radio" name="contribution_preference" value="both" checked?={ selected == "both" } class="mt-1"/>
+				<span class="text-sm"><span class="block font-medium">Both</span><span class="mt-0.5 block text-stone-500">Start with any problem or approach that interests you.</span></span>
+			</label>
+		</div>
+		if errorMessage != "" {
+			<p class="error" role="alert">{ errorMessage }</p>
+		}
+	</fieldset>
+}

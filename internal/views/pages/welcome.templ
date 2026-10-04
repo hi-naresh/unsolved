@@ -3,12 +3,14 @@ package pages
 import (
 	"github.com/hi-naresh/unsolved/internal/auth"
 	"github.com/hi-naresh/unsolved/internal/views/layouts"
+	"github.com/hi-naresh/unsolved/internal/views/partials"
 )
 
 // WelcomeForm is the /welcome form state.
 type WelcomeForm struct {
 	Handle      string
 	InDirectory bool
+	ContributionPreference string
 	Next        string
 	Errors      map[string]string // field → message
 }
@@ -25,11 +27,12 @@ templ Welcome(f WelcomeForm) {
 					<svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3.5l1.9 4.6 4.9.4-3.7 3.2 1.1 4.8L12 14l-4.2 2.5 1.1-4.8-3.7-3.2 4.9-.4L12 3.5Z" stroke-linejoin="round"></path><path d="M5 20.5h14" stroke-linecap="round"></path></svg>
 				</div>
 				<h1 class="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">Welcome to Unsolved</h1>
-				<p class="mt-2 text-[15px] text-stone-600">Two quick choices and you're in.</p>
+				<p class="mt-2 text-[15px] text-stone-600">Set up your profile and choose where to begin.</p>
 			</div>
 			<form method="post" action="/welcome" class="card mt-6 space-y-6 p-5 sm:p-6">
 				<input type="hidden" name="csrf_token" value={ auth.CSRFToken(ctx) }/>
 				<input type="hidden" name="next" value={ f.Next }/>
+				@partials.ContributorPreference(f.ContributionPreference, f.Errors["contribution_preference"])
 				<div>
 					<label for="handle" class="block text-sm font-semibold">Pick a handle</label>
 					<div class="adorn">
@@ -59,15 +62,16 @@ templ Welcome(f WelcomeForm) {
 					<input type="checkbox" name="in_directory" value="1" checked?={ f.InDirectory } class="switch"/>
 					<span class="text-sm">
 						<span class="font-semibold">List me in the members directory</span>
-						<span class="mt-0.5 block text-stone-500">Your profile will then also show your LinkedIn or X link. Off by default.</span>
+						<span class="mt-0.5 block text-stone-500">Your profile will then also show links to your connected sign-in profiles. Off by default.</span>
 					</span>
 				</label>
 				<button type="submit" class="btn w-full py-2.5">
 					Continue
 					<svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 10h12M11 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
 				</button>
+				<button type="submit" name="action" value="skip" formnovalidate class="btn-secondary w-full">Skip for now</button>
 			</form>
-			<p class="mt-4 text-center text-xs text-stone-500">You can change both any time in Settings.</p>
+			<p class="mt-4 text-center text-xs text-stone-500">You can change your choice any time in Settings.</p>
 		</div>
 		<script src="/static/js/forms.js?v=atlas-2" defer></script>
 	}

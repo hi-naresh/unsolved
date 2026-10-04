@@ -323,6 +323,7 @@ func (h *Handlers) problemEvolution(w http.ResponseWriter, r *http.Request) erro
 	v := pages.EvolutionView{
 		ProblemID: pid, Title: ev.Header.Title, DomainName: ev.Header.DomainName,
 		CanWrite: u != nil && !u.Suspended && !invalid,
+		MinVotes: h.Cfg.RankMinVotesToTakeOver,
 	}
 	for _, n := range ev.Revisions {
 		why := ""
@@ -362,6 +363,7 @@ func (h *Handlers) reviseForm(w http.ResponseWriter, r *http.Request) error {
 		ProblemID: id.String(), ParentRevisionID: src.RevisionID.String(), ParentIsCurrent: src.IsCurrent,
 		DomainName: src.DomainName, CurrentProcess: src.CurrentProcess, Pain: src.Pain, Tried: src.Tried,
 		Title: src.Title, Display: contentDisplayDefault(r), Handle: auth.UserFrom(r.Context()).Handle,
+		MinVotes: h.Cfg.RankMinVotesToTakeOver,
 	}), nil)
 }
 
@@ -381,6 +383,7 @@ func (h *Handlers) createRevision(w http.ResponseWriter, r *http.Request) error 
 		WhyNote:          r.PostFormValue("why_note"),
 		Display:          r.PostFormValue("display"),
 		Handle:           u.Handle,
+		MinVotes:         h.Cfg.RankMinVotesToTakeOver,
 	}
 	parent, _ := uuid.Parse(f.ParentRevisionID) // a bad id fails the ownership check
 	rid, err := h.Svc.CreateRevision(r.Context(), id, u.ID, service.NewRevision{

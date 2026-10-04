@@ -29,6 +29,7 @@ func (h *Handlers) settingsPage(w http.ResponseWriter, r *http.Request) error {
 	st := service.SettingsOf(u)
 	f := pages.SettingsForm{
 		Handle: st.Handle, InDirectory: st.InDirectory, DeclaredHistory: st.DeclaredHistory, Email: st.Email,
+		ContributionPreference: st.ContributionPreference, OnboardingCompleted: u.OnboardingCompleted,
 		Suspended: viewer.Suspended, Saved: r.URL.Query().Get("saved") == "1",
 	}
 	return h.render(w, r, http.StatusOK, pages.Settings(f), nil)
@@ -36,17 +37,19 @@ func (h *Handlers) settingsPage(w http.ResponseWriter, r *http.Request) error {
 
 func (h *Handlers) settingsSubmit(w http.ResponseWriter, r *http.Request) error {
 	in := service.Settings{
-		Handle:          r.PostFormValue("handle"),
-		InDirectory:     r.PostFormValue("in_directory") != "",
-		DeclaredHistory: r.PostFormValue("declared_history"),
-		Email:           r.PostFormValue("email"),
+		Handle:                 r.PostFormValue("handle"),
+		InDirectory:            r.PostFormValue("in_directory") != "",
+		DeclaredHistory:        r.PostFormValue("declared_history"),
+		Email:                  r.PostFormValue("email"),
+		ContributionPreference: r.PostFormValue("contribution_preference"),
 	}
 	err := h.Svc.UpdateSettings(r.Context(), auth.UserFrom(r.Context()).ID, in)
 	var ve service.ErrValidation
 	if errors.As(err, &ve) {
 		f := pages.SettingsForm{
 			Handle: in.Handle, InDirectory: in.InDirectory, DeclaredHistory: in.DeclaredHistory, Email: in.Email,
-			Errors: map[string]string{ve.Field: ve.Msg},
+			ContributionPreference: in.ContributionPreference,
+			Errors:                 map[string]string{ve.Field: ve.Msg},
 		}
 		return h.render(w, r, http.StatusUnprocessableEntity, pages.Settings(f), nil)
 	}

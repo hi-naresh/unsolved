@@ -166,17 +166,49 @@ func (s *Service) CompleteWelcome(ctx context.Context, userID uuid.UUID, handle 
 	return err
 }
 
+// CompleteWelcomeWithPreference saves the profile and contributor choice as
+// one update, so an invalid choice cannot partially change the profile.
+func (s *Service) CompleteWelcomeWithPreference(ctx context.Context, userID uuid.UUID, handle string, inDirectory bool, preference string) error {
+	if err := ValidateContributionPreference(preference); err != nil {
+		return err
+	}
+	handle = NormalizeHandle(handle)
+	if err := ValidateHandle(handle); err != nil {
+		return err
+	}
+	if err := s.guardAdminHandle(ctx, userID, handle); err != nil {
+		return err
+	}
+	err := s.Store.CompleteUserWelcome(ctx, store.CompleteUserWelcomeParams{
+		ID: userID, Handle: handle, InDirectory: inDirectory, ContributionPreference: preference,
+	})
+	if handleTaken(err) {
+		return Invalid("handle", "That handle is taken. Pick another.")
+	}
+	return err
+}
+
+func ValidateContributionPreference(preference string) error {
+	switch preference {
+	case "", "identifier", "solver", "both":
+		return nil
+	default:
+		return Invalid("contribution_preference", "Choose a valid way to contribute.")
+	}
+}
+
 // Settings is the editable part of a user's profile.
 type Settings struct {
-	Handle          string
-	InDirectory     bool
-	DeclaredHistory string // empty clears; shown labelled unverified, zero weight
-	Email           string // empty clears; used only for Solved prompts
+	Handle                 string
+	InDirectory            bool
+	DeclaredHistory        string // empty clears; shown labelled unverified, zero weight
+	Email                  string // empty clears; used only for Solved prompts
+	ContributionPreference string
 }
 
 // SettingsOf returns a user's current settings for the form.
 func SettingsOf(u store.User) Settings {
-	st := Settings{Handle: u.Handle, InDirectory: u.InDirectory}
+	st := Settings{Handle: u.Handle, InDirectory: u.InDirectory, ContributionPreference: u.ContributionPreference}
 	if u.DeclaredHistory != nil {
 		st.DeclaredHistory = *u.DeclaredHistory
 	}
@@ -188,6 +220,9 @@ func SettingsOf(u store.User) Settings {
 
 // UpdateSettings validates and saves the settings form.
 func (s *Service) UpdateSettings(ctx context.Context, userID uuid.UUID, in Settings) error {
+	if err := ValidateContributionPreference(in.ContributionPreference); err != nil {
+		return err
+	}
 	in.Handle = NormalizeHandle(in.Handle)
 	if err := ValidateHandle(in.Handle); err != nil {
 		return err
@@ -208,6 +243,7 @@ func (s *Service) UpdateSettings(ctx context.Context, userID uuid.UUID, in Setti
 	err := s.Store.UpdateUserSettings(ctx, store.UpdateUserSettingsParams{
 		ID: userID, Handle: in.Handle, InDirectory: in.InDirectory,
 		DeclaredHistory: nilIfEmpty(history), Email: nilIfEmpty(email),
+		ContributionPreference: in.ContributionPreference,
 	})
 	if handleTaken(err) {
 		return Invalid("handle", "That handle is taken. Pick another.")

@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/hi-naresh/unsolved/internal/auth"
 	"github.com/hi-naresh/unsolved/internal/service"
+	"github.com/hi-naresh/unsolved/internal/store"
 	"github.com/hi-naresh/unsolved/internal/views/pages"
 )
 
@@ -24,13 +25,20 @@ func (h *Handlers) signInPage(w http.ResponseWriter, r *http.Request) error {
 		redirect(w, r, next)
 		return nil
 	}
-	return h.render(w, r, http.StatusOK, pages.SignIn(next), nil)
+	return h.render(w, r, http.StatusOK, pages.SignIn(next,
+		h.Auth.Enabled(store.ProviderLinkedin), h.Auth.Enabled(store.ProviderX),
+		h.Auth.Enabled(store.ProviderGoogle), h.Auth.Enabled(store.ProviderGithub),
+		h.Auth.Enabled(store.ProviderReddit)), nil)
 }
 
 func (h *Handlers) signInStart(w http.ResponseWriter, r *http.Request) error {
 	p, ok := auth.ParseProvider(chi.URLParam(r, "provider"))
-	if !ok || !h.Auth.Enabled(p) {
+	if !ok {
 		return service.ErrNotFound
+	}
+	if !h.Auth.Enabled(p) {
+		return h.render(w, r, http.StatusServiceUnavailable,
+			pages.Message("Sign-in is not available yet", "This sign-in option has not been set up. You can still explore problems, or return to Sign in to choose another option."), nil)
 	}
 	if err := h.Auth.StartSignIn(w, r, p, r.URL.Query().Get("next")); err != nil {
 		h.Log.ErrorContext(r.Context(), "sign-in start", "provider", p, "err", err)

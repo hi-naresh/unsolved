@@ -13,7 +13,7 @@ Needs Go (the toolchain in `go.mod` is fetched automatically) and Docker.
 
 ```sh
 docker compose up -d     # Postgres 16 + pgvector on :5432
-cp .env.example .env     # local config; provider keys can stay placeholders
+cp .env.example .env     # local config; see docs/AUTH-SETUP.md to enable sign-in providers
 make tools               # sqlc, templ, staticcheck, air, Tailwind CLI
 make migrate             # apply migrations
 make seed                # load the five seed problems (idempotent)

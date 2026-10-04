@@ -85,6 +85,35 @@ func TestSettingsUpdate(t *testing.T) {
 	}
 }
 
+func TestSettingsContributorPreference(t *testing.T) {
+	app := newTestApp(t)
+	u := app.newUser(t)
+	c := app.as(t, u)
+	resp := c.get("/settings")
+	b := body(t, resp)
+	if !strings.Contains(b, "Choose how you would like to begin") || !strings.Contains(b, `name="contribution_preference"`) {
+		t.Fatal("existing account was not offered optional setup")
+	}
+	resp = c.postForm("/settings", url.Values{"handle": {u.Handle}, "contribution_preference": {"both"}})
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("save: %d", resp.StatusCode)
+	}
+	got, _ := app.Svc.GetUser(context.Background(), u.ID)
+	if got.ContributionPreference != "both" || !got.OnboardingCompleted {
+		t.Fatalf("preference not saved: %+v", got)
+	}
+	resp = c.postForm("/settings", url.Values{"handle": {u.Handle}, "contribution_preference": {"bogus"}})
+	b = body(t, resp)
+	if resp.StatusCode != http.StatusUnprocessableEntity || !strings.Contains(b, "Choose a valid way") {
+		t.Fatalf("invalid preference: %d %s", resp.StatusCode, b)
+	}
+	got, _ = app.Svc.GetUser(context.Background(), u.ID)
+	if got.ContributionPreference != "both" {
+		t.Fatal("invalid update changed preference")
+	}
+}
+
 func TestExport(t *testing.T) {
 	app := newTestApp(t)
 	u := app.newUser(t)

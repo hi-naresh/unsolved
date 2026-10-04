@@ -23,6 +23,13 @@ type Config struct {
 	LinkedInClientSecret string
 	XClientID            string
 	XClientSecret        string
+	GoogleClientID       string
+	GoogleClientSecret   string
+	GitHubClientID       string
+	GitHubClientSecret   string
+	RedditClientID       string
+	RedditClientSecret   string
+	RedditUserAgent      string
 
 	PostmarkToken string
 
@@ -95,6 +102,13 @@ func Load() (Config, error) {
 		LinkedInClientSecret:   get("LINKEDIN_CLIENT_SECRET", false),
 		XClientID:              get("X_CLIENT_ID", false),
 		XClientSecret:          get("X_CLIENT_SECRET", false),
+		GoogleClientID:         get("GOOGLE_CLIENT_ID", false),
+		GoogleClientSecret:     get("GOOGLE_CLIENT_SECRET", false),
+		GitHubClientID:         get("GITHUB_CLIENT_ID", false),
+		GitHubClientSecret:     get("GITHUB_CLIENT_SECRET", false),
+		RedditClientID:         get("REDDIT_CLIENT_ID", false),
+		RedditClientSecret:     get("REDDIT_CLIENT_SECRET", false),
+		RedditUserAgent:        get("REDDIT_USER_AGENT", false),
 		PostmarkToken:          get("POSTMARK_TOKEN", false),
 		RankHalfLife:           dur("RANK_HALF_LIFE", 720*time.Hour),
 		RankMinVotesToTakeOver: num("RANK_MIN_VOTES_TO_TAKE_OVER", 3),
@@ -138,8 +152,8 @@ func (c Config) IsAdmin(handle string) bool {
 }
 
 // SigningKey derives a purpose-specific HMAC key from the existing secrets
-// (no separate config key exists for it). Rotating any provider secret or the
-// Postmark token invalidates outstanding signed cookies and email tokens.
+// (no separate config key exists for it). Keep the original inputs and order:
+// adding provider credentials must not invalidate existing sessions.
 func (c Config) SigningKey(purpose string) []byte {
 	m := hmac.New(sha256.New, []byte("unsolved-signing-v1"))
 	for _, s := range []string{c.LinkedInClientSecret, c.XClientSecret, c.PostmarkToken, c.DatabaseURL} {

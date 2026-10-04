@@ -13,7 +13,7 @@ templ Privacy() {
 		<aside class="card mt-6 p-4 sm:p-5" aria-label="In short">
 			<p class="kicker">In short</p>
 			<ul class="mt-3 grid gap-3 text-sm text-stone-700 sm:grid-cols-2">
-				@privacyPoint("No email needed", "Sign in with LinkedIn or X; email is optional and used for one thing.")
+				@privacyPoint("No email needed", "Sign in with LinkedIn, X, Google, GitHub or Reddit; email is optional and used for one thing.")
 				@privacyPoint("Anonymous to others", "Other users never see your handle on anonymous posts. The platform can.")
 				@privacyPoint("Export any time", "Download everything we hold about you as JSON.")
 				@privacyPoint("Delete any time", "Your identities go; what you wrote stays, as “deleted user”.")
@@ -22,9 +22,9 @@ templ Privacy() {
 		<article class="prose-doc">
 			<h2 id="sign-in">What we store when you sign in</h2>
 			<p>
-				You sign in with LinkedIn or X. From them we store only your <strong>provider user id</strong> and your
+				You sign in with LinkedIn, X, Google, GitHub or Reddit. From them we store only your <strong>provider user id</strong> and your
 				<strong>profile URL</strong>, plus the display name you're shown under. We don't ask them for your
-				email address and we don't get one. We never post anything to your LinkedIn or X account.
+				email address and we don't store one from sign-in. We never post anything to your connected account.
 			</p>
 			<p>
 				You choose a handle when you join. Your profile shows your social links only if you opt into the
@@ -51,8 +51,8 @@ templ Privacy() {
 			<h2 id="delete">Deleting your account</h2>
 			<p>When you delete your account in <a href="/settings">settings</a>:</p>
 			<ul>
-				<li>your LinkedIn/X identities and all your sessions are deleted, so you're signed out everywhere;</li>
-				<li>your profile is scrubbed: handle replaced, display name, declared history and email cleared;</li>
+				<li>your provider identities and all your sessions are deleted, so you're signed out everywhere;</li>
+				<li>your profile is scrubbed: handle replaced, display name, declared history, contributor preference and email cleared;</li>
 				<li>what you wrote stays, shown as by "deleted user", because other people's revisions and solutions build on it.</li>
 			</ul>
 			<h2 id="where">Where it lives</h2>

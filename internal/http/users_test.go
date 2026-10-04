@@ -95,6 +95,46 @@ func TestWelcome(t *testing.T) {
 	}
 }
 
+func TestContributorWelcomeFlow(t *testing.T) {
+	app := newTestApp(t)
+	u := app.newUser(t)
+	c := app.as(t, u)
+	returnPath := "/p/123/revise?from=preview"
+	resp := c.postForm("/welcome", url.Values{"action": {"skip"}, "handle": {"different"}, "next": {returnPath}})
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != returnPath {
+		t.Fatalf("skip return: %d %q", resp.StatusCode, resp.Header.Get("Location"))
+	}
+	got, _ := app.Svc.GetUser(context.Background(), u.ID)
+	if got.Handle != u.Handle || got.ContributionPreference != "" || got.OnboardingCompleted {
+		t.Fatalf("skip changed profile: %+v", got)
+	}
+	resp = c.postForm("/welcome", url.Values{"handle": {"new_handle"}, "contribution_preference": {"invalid"}, "next": {returnPath}})
+	b := body(t, resp)
+	if resp.StatusCode != http.StatusUnprocessableEntity || !strings.Contains(b, "Choose a valid way") || !strings.Contains(b, `value="/p/123/revise?from=preview"`) {
+		t.Fatalf("invalid choice: %d %s", resp.StatusCode, b)
+	}
+	got, _ = app.Svc.GetUser(context.Background(), u.ID)
+	if got.Handle != u.Handle {
+		t.Fatal("invalid choice changed handle")
+	}
+	resp = c.postForm("/welcome", url.Values{"handle": {"new_handle"}, "contribution_preference": {"identifier"}, "next": {returnPath}})
+	resp.Body.Close()
+	if resp.Header.Get("Location") != returnPath {
+		t.Fatalf("specific return lost: %q", resp.Header.Get("Location"))
+	}
+	got, _ = app.Svc.GetUser(context.Background(), u.ID)
+	if got.ContributionPreference != "identifier" || !got.OnboardingCompleted {
+		t.Fatalf("not saved: %+v", got)
+	}
+	other := app.newUser(t)
+	resp = app.as(t, other).postForm("/welcome", url.Values{"handle": {other.Handle}, "contribution_preference": {"solver"}, "next": {"/"}})
+	resp.Body.Close()
+	if resp.Header.Get("Location") != "/problems" {
+		t.Fatalf("solver destination: %q", resp.Header.Get("Location"))
+	}
+}
+
 func TestProfilePage(t *testing.T) {
 	app := newTestApp(t)
 	u := app.newUser(t) // identity profile URL https://x.com/someone

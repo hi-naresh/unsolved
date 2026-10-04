@@ -19,7 +19,7 @@ func userSignInHref(provider, next string) templ.SafeURL {
 }
 
 // SignIn is the provider chooser. next is already validated as a local path.
-func SignIn(next string) templ.Component {
+func SignIn(next string, linkedInEnabled, xEnabled, googleEnabled, githubEnabled, redditEnabled bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -52,49 +52,160 @@ func SignIn(next string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"signin-layout mx-auto max-w-md sm:pt-8\"><div class=\"card p-7 sm:p-9\"><svg class=\"mx-auto size-11\" viewBox=\"0 0 32 32\" aria-hidden=\"true\"><rect width=\"32\" height=\"32\" rx=\"8\" class=\"fill-accent\"></rect> <path d=\"M10 9v8a6 6 0 0 0 12 0V9\" stroke=\"white\" stroke-width=\"3.2\" fill=\"none\" stroke-linecap=\"round\"></path></svg><h1 class=\"mt-4 text-center text-3xl font-semibold tracking-tight\">Sign in to Unsolved</h1><p class=\"mt-1.5 text-center text-sm leading-relaxed text-stone-600\">Help make everyday work better. Sign in to share problems, improve ideas and vote for useful solutions.</p><div class=\"mt-6 space-y-2.5\"><a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"signin-layout mx-auto max-w-md sm:pt-8\"><div class=\"card p-7 sm:p-9\"><svg class=\"mx-auto size-11\" viewBox=\"0 0 32 32\" aria-hidden=\"true\"><rect width=\"32\" height=\"32\" rx=\"8\" class=\"fill-accent\"></rect> <path d=\"M10 9v8a6 6 0 0 0 12 0V9\" stroke=\"white\" stroke-width=\"3.2\" fill=\"none\" stroke-linecap=\"round\"></path></svg><h1 class=\"mt-4 text-center text-3xl font-semibold tracking-tight\">Sign in to Unsolved</h1><p class=\"mt-1.5 text-center text-sm leading-relaxed text-stone-600\">Help make everyday work better. Sign in to share problems, improve ideas and vote for useful solutions.</p><div class=\"mt-6 space-y-2.5\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var3 templ.SafeURL
-			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(userSignInHref("linkedin", next))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/signin.templ`, Line: 27, Col: 47}
+			if !linkedInEnabled && !xEnabled && !googleEnabled && !githubEnabled && !redditEnabled {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<p class=\"text-center font-semibold\">Sign-in is not available yet</p><p class=\"text-center text-sm text-stone-600\">You can explore problems while we finish setting up sign-in.</p><a href=\"/\" class=\"provider\"><span class=\"flex-1\">Explore problems</span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = signinChevron().Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</a> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
+			if linkedInEnabled {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<a href=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var3 templ.SafeURL
+				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(userSignInHref("linkedin", next))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/signin.templ`, Line: 36, Col: 47}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" class=\"provider\"><span class=\"provider-mark\"><svg class=\"size-4\" viewBox=\"0 0 16 16\" fill=\"currentColor\" aria-hidden=\"true\"><circle cx=\"3.6\" cy=\"3.4\" r=\"1.6\"></circle><rect x=\"2.2\" y=\"6\" width=\"2.8\" height=\"7.5\" rx=\".4\"></rect><path d=\"M6.8 6h2.6v1.1c.5-.8 1.4-1.3 2.6-1.3 2 0 3 1.3 3 3.6v4.1h-2.8V9.9c0-1-.4-1.6-1.3-1.6-.9 0-1.5.6-1.5 1.7v3.5H6.8V6Z\"></path></svg></span> <span class=\"flex-1\">Continue with LinkedIn</span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = signinChevron().Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</a> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" class=\"provider\"><span class=\"provider-mark\"><svg class=\"size-4\" viewBox=\"0 0 16 16\" fill=\"currentColor\" aria-hidden=\"true\"><circle cx=\"3.6\" cy=\"3.4\" r=\"1.6\"></circle><rect x=\"2.2\" y=\"6\" width=\"2.8\" height=\"7.5\" rx=\".4\"></rect><path d=\"M6.8 6h2.6v1.1c.5-.8 1.4-1.3 2.6-1.3 2 0 3 1.3 3 3.6v4.1h-2.8V9.9c0-1-.4-1.6-1.3-1.6-.9 0-1.5.6-1.5 1.7v3.5H6.8V6Z\"></path></svg></span> <span class=\"flex-1\">Continue with LinkedIn</span>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
+			if xEnabled {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<a href=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var4 templ.SafeURL
+				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(userSignInHref("x", next))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/signin.templ`, Line: 45, Col: 40}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\" class=\"provider\"><span class=\"provider-mark\"><svg class=\"size-3.5\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M3 2.5 13 13.5M13 2.5 3 13.5\"></path></svg></span> <span class=\"flex-1\">Continue with X</span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = signinChevron().Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</a> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
 			}
-			templ_7745c5c3_Err = signinChevron().Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
+			if googleEnabled {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<a href=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var5 templ.SafeURL
+				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(userSignInHref("google", next))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/signin.templ`, Line: 54, Col: 46}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" class=\"provider\"><span class=\"provider-mark font-semibold\" aria-hidden=\"true\">G</span><span class=\"flex-1\">Continue with Google</span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = signinChevron().Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</a> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</a> <a href=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
+			if githubEnabled {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<a href=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var6 templ.SafeURL
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(userSignInHref("github", next))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/signin.templ`, Line: 57, Col: 46}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" class=\"provider\"><span class=\"provider-mark font-semibold\" aria-hidden=\"true\">GH</span><span class=\"flex-1\">Continue with GitHub</span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = signinChevron().Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</a> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
 			}
-			var templ_7745c5c3_Var4 templ.SafeURL
-			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(userSignInHref("x", next))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/signin.templ`, Line: 34, Col: 40}
+			if redditEnabled {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<a href=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var7 templ.SafeURL
+				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(userSignInHref("reddit", next))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/signin.templ`, Line: 60, Col: 46}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" class=\"provider\"><span class=\"provider-mark font-semibold\" aria-hidden=\"true\">r/</span><span class=\"flex-1\">Continue with Reddit</span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = signinChevron().Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</a>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" class=\"provider\"><span class=\"provider-mark\"><svg class=\"size-3.5\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M3 2.5 13 13.5M13 2.5 3 13.5\"></path></svg></span> <span class=\"flex-1\">Continue with X</span>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = signinChevron().Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</a></div><p class=\"mt-5 text-center text-xs text-stone-500\"><svg class=\"mr-1 inline size-3.5 -translate-y-px align-middle\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><rect x=\"4\" y=\"9\" width=\"12\" height=\"8.5\" rx=\"2\"></rect><path d=\"M7 9V6.5a3 3 0 0 1 6 0V9\"></path></svg> <span>We only store your provider id and profile link.</span></p></div><p class=\"mt-4 text-center text-xs leading-relaxed text-stone-500\">Never your email, contacts or posts. Post anonymously, export your data or delete your account any time. <a href=\"/privacy\" class=\"font-medium text-stone-700 underline decoration-stone-300 underline-offset-2 hover:decoration-stone-500\">Privacy</a></p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</div><p class=\"mt-5 text-center text-xs text-stone-500\"><svg class=\"mr-1 inline size-3.5 -translate-y-px align-middle\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><rect x=\"4\" y=\"9\" width=\"12\" height=\"8.5\" rx=\"2\"></rect><path d=\"M7 9V6.5a3 3 0 0 1 6 0V9\"></path></svg> <span>We store your provider ID, display name and available profile link.</span></p></div><p class=\"mt-4 text-center text-xs leading-relaxed text-stone-500\">Never your email, contacts or posts. Post anonymously, export your data or delete your account any time. <a href=\"/privacy\" class=\"font-medium text-stone-700 underline decoration-stone-300 underline-offset-2 hover:decoration-stone-500\">Privacy</a></p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -124,12 +235,12 @@ func signinChevron() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var5 == nil {
-			templ_7745c5c3_Var5 = templ.NopComponent
+		templ_7745c5c3_Var8 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var8 == nil {
+			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<svg class=\"size-4 text-stone-400\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"m8 5 5 5-5 5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<svg class=\"size-4 text-stone-400\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"m8 5 5 5-5 5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

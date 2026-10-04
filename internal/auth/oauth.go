@@ -31,11 +31,11 @@ var (
 )
 
 // ParseProvider maps a route segment to a provider. ok is false for anything
-// but linkedin and x.
+// but supported sign-in providers.
 func ParseProvider(s string) (store.Provider, bool) {
 	p := store.Provider(s)
 	switch p {
-	case store.ProviderLinkedin, store.ProviderX:
+	case store.ProviderLinkedin, store.ProviderX, store.ProviderGoogle, store.ProviderGithub, store.ProviderReddit:
 		return p, true
 	}
 	return "", false

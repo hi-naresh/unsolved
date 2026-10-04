@@ -167,6 +167,41 @@ func TestCompleteWelcome(t *testing.T) {
 	}
 }
 
+func TestContributorWelcomeAndSettings(t *testing.T) {
+	s := testService(t)
+	ctx := context.Background()
+	u := newTestUser(t, s)
+	initial := u.Handle
+	u, _ = s.GetUser(ctx, u.ID)
+	if u.Handle != initial || u.InDirectory || u.ContributionPreference != "" || u.OnboardingCompleted {
+		t.Fatalf("skip changed profile: %+v", u)
+	}
+	if err := s.CompleteWelcomeWithPreference(ctx, u.ID, "chosen_handle", true, "invalid"); err == nil {
+		t.Fatal("invalid preference accepted")
+	}
+	u, _ = s.GetUser(ctx, u.ID)
+	if u.Handle != initial || u.OnboardingCompleted {
+		t.Fatal("invalid preference partially saved")
+	}
+	if err := s.CompleteWelcomeWithPreference(ctx, u.ID, "chosen_handle", true, "identifier"); err != nil {
+		t.Fatal(err)
+	}
+	u, _ = s.GetUser(ctx, u.ID)
+	if u.Handle != "chosen_handle" || !u.InDirectory || u.ContributionPreference != "identifier" || !u.OnboardingCompleted {
+		t.Fatalf("welcome incomplete: %+v", u)
+	}
+	if err := s.UpdateSettings(ctx, u.ID, Settings{Handle: u.Handle, ContributionPreference: "solver"}); err != nil {
+		t.Fatal(err)
+	}
+	u, _ = s.GetUser(ctx, u.ID)
+	if u.ContributionPreference != "solver" || !u.OnboardingCompleted {
+		t.Fatalf("settings preference: %+v", u)
+	}
+	if err := s.UpdateSettings(ctx, u.ID, Settings{Handle: u.Handle, ContributionPreference: "bad"}); err == nil {
+		t.Fatal("invalid settings preference accepted")
+	}
+}
+
 func TestUpdateSettings(t *testing.T) {
 	s := testService(t)
 	ctx := context.Background()
@@ -349,7 +384,7 @@ func TestExportAndDelete(t *testing.T) {
 	s := testService(t)
 	ctx := context.Background()
 	u := newTestUser(t, s)
-	_ = s.UpdateSettings(ctx, u.ID, Settings{Handle: u.Handle, Email: "me@example.com", DeclaredHistory: "history"})
+	_ = s.UpdateSettings(ctx, u.ID, Settings{Handle: u.Handle, Email: "me@example.com", DeclaredHistory: "history", ContributionPreference: "both"})
 	pid, _ := seedProblem(t, s, u.ID, "anonymous", "My anonymous problem")
 
 	raw, err := s.ExportUserData(ctx, u.ID)
@@ -358,8 +393,10 @@ func TestExportAndDelete(t *testing.T) {
 	}
 	var ex struct {
 		User struct {
-			Handle string `json:"handle"`
-			Email  string `json:"email"`
+			Handle                 string `json:"handle"`
+			Email                  string `json:"email"`
+			ContributionPreference string `json:"contribution_preference"`
+			OnboardingCompleted    bool   `json:"onboarding_completed"`
 		} `json:"user"`
 		Identities []struct {
 			Provider    string `json:"provider"`
@@ -377,7 +414,7 @@ func TestExportAndDelete(t *testing.T) {
 	if err := json.Unmarshal(raw, &ex); err != nil {
 		t.Fatalf("export is not JSON: %v\n%s", err, raw)
 	}
-	if ex.User.Handle != u.Handle || ex.User.Email != "me@example.com" || len(ex.Identities) != 1 ||
+	if ex.User.Handle != u.Handle || ex.User.Email != "me@example.com" || ex.User.ContributionPreference != "both" || !ex.User.OnboardingCompleted || len(ex.Identities) != 1 ||
 		len(ex.Problems) != 1 || ex.Problems[0].ID != pid || ex.Problems[0].AuthorDisplay != "anonymous" ||
 		len(ex.ProblemRevisions) != 1 || ex.ProblemRevisions[0].Title != "My anonymous problem" || ex.Votes == nil {
 		t.Fatalf("export incomplete: %s", raw)
@@ -392,7 +429,7 @@ func TestExportAndDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got.Handle != DeletedHandle(u.ID, false) || got.DisplayName != "deleted user" || got.Email != nil ||
-		got.DeclaredHistory != nil || got.InDirectory || got.DeletedAt == nil {
+		got.DeclaredHistory != nil || got.InDirectory || got.ContributionPreference != "" || got.OnboardingCompleted || got.DeletedAt == nil {
 		t.Fatalf("not scrubbed: %+v", got)
 	}
 	if !handleRE.MatchString(got.Handle) {

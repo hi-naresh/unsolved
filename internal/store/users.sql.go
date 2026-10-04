@@ -12,6 +12,31 @@ import (
 	"github.com/google/uuid"
 )
 
+const completeUserWelcome = `-- name: CompleteUserWelcome :exec
+UPDATE users
+SET handle = $1, in_directory = $2,
+    contribution_preference = $3,
+    onboarding_completed = $3::text <> ''
+WHERE id = $4 AND deleted_at IS NULL
+`
+
+type CompleteUserWelcomeParams struct {
+	Handle                 string
+	InDirectory            bool
+	ContributionPreference string
+	ID                     uuid.UUID
+}
+
+func (q *Queries) CompleteUserWelcome(ctx context.Context, arg CompleteUserWelcomeParams) error {
+	_, err := q.db.Exec(ctx, completeUserWelcome,
+		arg.Handle,
+		arg.InDirectory,
+		arg.ContributionPreference,
+		arg.ID,
+	)
+	return err
+}
+
 const createIdentity = `-- name: CreateIdentity :exec
 INSERT INTO identities (user_id, provider, provider_uid, profile_url)
 VALUES ($1, $2, $3, $4)
@@ -37,7 +62,7 @@ func (q *Queries) CreateIdentity(ctx context.Context, arg CreateIdentityParams) 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (id, handle, display_name)
 VALUES ($1, $2, $3)
-RETURNING id, handle, display_name, in_directory, declared_history, suspended_at, deleted_at, created_at, email
+RETURNING id, handle, display_name, in_directory, declared_history, suspended_at, deleted_at, created_at, email, contribution_preference, onboarding_completed
 `
 
 type CreateUserParams struct {
@@ -59,6 +84,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.DeletedAt,
 		&i.CreatedAt,
 		&i.Email,
+		&i.ContributionPreference,
+		&i.OnboardingCompleted,
 	)
 	return i, err
 }
@@ -86,7 +113,7 @@ func (q *Queries) GetIdentity(ctx context.Context, arg GetIdentityParams) (Ident
 }
 
 const getUserByHandle = `-- name: GetUserByHandle :one
-SELECT id, handle, display_name, in_directory, declared_history, suspended_at, deleted_at, created_at, email FROM users WHERE handle = $1
+SELECT id, handle, display_name, in_directory, declared_history, suspended_at, deleted_at, created_at, email, contribution_preference, onboarding_completed FROM users WHERE handle = $1
 `
 
 func (q *Queries) GetUserByHandle(ctx context.Context, handle string) (User, error) {
@@ -102,12 +129,14 @@ func (q *Queries) GetUserByHandle(ctx context.Context, handle string) (User, err
 		&i.DeletedAt,
 		&i.CreatedAt,
 		&i.Email,
+		&i.ContributionPreference,
+		&i.OnboardingCompleted,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, handle, display_name, in_directory, declared_history, suspended_at, deleted_at, created_at, email FROM users WHERE id = $1
+SELECT id, handle, display_name, in_directory, declared_history, suspended_at, deleted_at, created_at, email, contribution_preference, onboarding_completed FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
@@ -123,6 +152,8 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.DeletedAt,
 		&i.CreatedAt,
 		&i.Email,
+		&i.ContributionPreference,
+		&i.OnboardingCompleted,
 	)
 	return i, err
 }
@@ -249,16 +280,21 @@ func (q *Queries) SetUserHandleAndDirectory(ctx context.Context, arg SetUserHand
 
 const updateUserSettings = `-- name: UpdateUserSettings :exec
 UPDATE users
-SET handle = $2, in_directory = $3, declared_history = $4, email = $5
+SET handle = $2, in_directory = $3,
+    declared_history = $4, email = $5,
+    contribution_preference = CASE WHEN $6::text = ''
+      THEN contribution_preference ELSE $6::text END,
+    onboarding_completed = onboarding_completed OR $6::text <> ''
 WHERE id = $1 AND deleted_at IS NULL
 `
 
 type UpdateUserSettingsParams struct {
-	ID              uuid.UUID
-	Handle          string
-	InDirectory     bool
-	DeclaredHistory *string
-	Email           *string
+	ID                     uuid.UUID
+	Handle                 string
+	InDirectory            bool
+	DeclaredHistory        *string
+	Email                  *string
+	ContributionPreference string
 }
 
 func (q *Queries) UpdateUserSettings(ctx context.Context, arg UpdateUserSettingsParams) error {
@@ -268,6 +304,7 @@ func (q *Queries) UpdateUserSettings(ctx context.Context, arg UpdateUserSettings
 		arg.InDirectory,
 		arg.DeclaredHistory,
 		arg.Email,
+		arg.ContributionPreference,
 	)
 	return err
 }

@@ -11,17 +11,20 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/hi-naresh/unsolved/internal/auth"
 	"github.com/hi-naresh/unsolved/internal/views/layouts"
+	"github.com/hi-naresh/unsolved/internal/views/partials"
 )
 
 // SettingsForm is the /settings form state.
 type SettingsForm struct {
-	Handle          string
-	InDirectory     bool
-	DeclaredHistory string
-	Email           string
-	Suspended       bool              // profile edits are blocked; export and delete still work
-	Saved           bool              // show a "saved" notice
-	Errors          map[string]string // field → message
+	Handle                 string
+	InDirectory            bool
+	DeclaredHistory        string
+	Email                  string
+	ContributionPreference string
+	OnboardingCompleted    bool
+	Suspended              bool              // profile edits are blocked; export and delete still work
+	Saved                  bool              // show a "saved" notice
+	Errors                 map[string]string // field → message
 }
 
 func userFieldError(errs map[string]string, field string) templ.Component {
@@ -53,7 +56,7 @@ func userFieldError(errs map[string]string, field string) templ.Component {
 			var templ_7745c5c3_Var2 string
 			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(msg)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 21, Col: 42}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 24, Col: 42}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 			if templ_7745c5c3_Err != nil {
@@ -105,7 +108,7 @@ func formSettingsGroup(title, sub string, icon templ.Component) templ.Component 
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 33, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 36, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -118,7 +121,7 @@ func formSettingsGroup(title, sub string, icon templ.Component) templ.Component 
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(sub)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 34, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 37, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -303,36 +306,46 @@ func Settings(f SettingsForm) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if f.Suspended {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<p class=\"note note-warn mt-4\"><svg viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M10 3 2.5 16.5h15L10 3Z\" stroke-linejoin=\"round\"></path><path d=\"M10 8.5v3.5M10 14.3v.2\" stroke-linecap=\"round\"></path></svg> <span>Your account is suspended, so you can't change your profile. You can still export your data or delete your account.</span></p>")
+			if !f.OnboardingCompleted && !f.Suspended {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<p class=\"note mt-4\">Choose how you would like to begin below, or <a href=\"/welcome\" class=\"underline\">visit the welcome step</a>. You can keep using Unsolved either way.</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, " <form method=\"post\" action=\"/settings\" class=\"mt-6\"><input type=\"hidden\" name=\"csrf_token\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, " ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if f.Suspended {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<p class=\"note note-warn mt-4\"><svg viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M10 3 2.5 16.5h15L10 3Z\" stroke-linejoin=\"round\"></path><path d=\"M10 8.5v3.5M10 14.3v.2\" stroke-linecap=\"round\"></path></svg> <span>Your account is suspended, so you can't change your profile. You can still export your data or delete your account.</span></p>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, " <form method=\"post\" action=\"/settings\" class=\"mt-6\"><input type=\"hidden\" name=\"csrf_token\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.ResolveAttributeValue(auth.CSRFToken(ctx))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 78, Col: 69}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 84, Col: 69}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\"><fieldset")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\"><fieldset")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if f.Suspended {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, " disabled")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, " disabled")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, " class=\"space-y-4 disabled:opacity-60\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " class=\"space-y-4 disabled:opacity-60\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -348,98 +361,17 @@ func Settings(f SettingsForm) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<div><label for=\"handle\" class=\"block text-sm font-medium\">Handle</label><div class=\"adorn\"><span aria-hidden=\"true\">")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var14 string
-				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs("@")
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 84, Col: 37}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</span> <input id=\"handle\" name=\"handle\" value=\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var15 string
-				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.ResolveAttributeValue(f.Handle)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 88, Col: 24}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var15)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "\" required minlength=\"3\" maxlength=\"24\" pattern=\"[a-z0-9_]{3,24}\" autocomplete=\"off\" autocapitalize=\"none\" spellcheck=\"false\" aria-describedby=\"handle-hint\" data-handle></div><p id=\"handle-hint\" class=\"hint mt-1.5\" data-default=\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var16 string
-				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.ResolveAttributeValue(formHandleRule)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 100, Col: 75}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\">")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var17 string
-				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(formHandleRule)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 100, Col: 94}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</p>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = userFieldError(f.Errors, "handle").Render(ctx, templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</div><div><label for=\"declared_history\" class=\"block text-sm font-medium\">Declared history</label><p class=\"hint\">Your background, in your words. Shown on your profile labelled \"unverified\"; it carries no weight in ranking.</p><textarea id=\"declared_history\" name=\"declared_history\" rows=\"4\" maxlength=\"2000\" data-aim=\"400\" placeholder=\"e.g. Ran dispatch at a haulage firm for six years.\" class=\"field leading-relaxed\">")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var18 string
-				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(f.DeclaredHistory)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 106, Col: 217}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</textarea><div class=\"meter-row\"><span class=\"meter\" aria-hidden=\"true\"><i id=\"declared_history-meter\"></i></span> <span class=\"count\" id=\"declared_history-count\"></span></div>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = userFieldError(f.Errors, "declared_history").Render(ctx, templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "</div>")
+				templ_7745c5c3_Err = partials.ContributorPreference(f.ContributionPreference, f.Errors["contribution_preference"]).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = formSettingsGroup("Profile", "How you appear on posts you make under your name.", formIconUser()).Render(templ.WithChildren(ctx, templ_7745c5c3_Var13), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = formSettingsGroup("Contributing", "Choose a starting point. You can still do everything on Unsolved.", formIconPeople()).Render(templ.WithChildren(ctx, templ_7745c5c3_Var13), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Var19 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+			templ_7745c5c3_Var14 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 				templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 				templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
 				if !templ_7745c5c3_IsBuffer {
@@ -451,23 +383,94 @@ func Settings(f SettingsForm) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<label class=\"flex cursor-pointer items-start gap-3\"><input type=\"checkbox\" name=\"in_directory\" value=\"1\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<div><label for=\"handle\" class=\"block text-sm font-medium\">Handle</label><div class=\"adorn\"><span aria-hidden=\"true\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				if f.InDirectory {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, " checked")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
+				var templ_7745c5c3_Var15 string
+				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs("@")
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 93, Col: 37}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, " class=\"switch\"> <span class=\"text-sm\"><span class=\"font-medium\">List me in the members directory</span> <span class=\"mt-0.5 block text-stone-500\">Also shows your LinkedIn or X link on your profile.</span></span></label>")
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</span> <input id=\"handle\" name=\"handle\" value=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var16 string
+				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.ResolveAttributeValue(f.Handle)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 97, Col: 24}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "\" required minlength=\"3\" maxlength=\"24\" pattern=\"[a-z0-9_]{3,24}\" autocomplete=\"off\" autocapitalize=\"none\" spellcheck=\"false\" aria-describedby=\"handle-hint\" data-handle></div><p id=\"handle-hint\" class=\"hint mt-1.5\" data-default=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var17 string
+				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.ResolveAttributeValue(formHandleRule)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 109, Col: 75}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var18 string
+				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(formHandleRule)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 109, Col: 94}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</p>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = userFieldError(f.Errors, "handle").Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "</div><div><label for=\"declared_history\" class=\"block text-sm font-medium\">Declared history</label><p class=\"hint\">Your background, in your words. Shown on your profile labelled \"unverified\"; it carries no weight in ranking.</p><textarea id=\"declared_history\" name=\"declared_history\" rows=\"4\" maxlength=\"2000\" data-aim=\"400\" placeholder=\"e.g. Ran dispatch at a haulage firm for six years.\" class=\"field leading-relaxed\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var19 string
+				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(f.DeclaredHistory)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 115, Col: 217}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</textarea><div class=\"meter-row\"><span class=\"meter\" aria-hidden=\"true\"><i id=\"declared_history-meter\"></i></span> <span class=\"count\" id=\"declared_history-count\"></span></div>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = userFieldError(f.Errors, "declared_history").Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = formSettingsGroup("Directory", "Whether other members can find you.", formIconPeople()).Render(templ.WithChildren(ctx, templ_7745c5c3_Var19), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = formSettingsGroup("Profile", "How you appear on posts you make under your name.", formIconUser()).Render(templ.WithChildren(ctx, templ_7745c5c3_Var14), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -483,42 +486,27 @@ func Settings(f SettingsForm) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<div><label for=\"email\" class=\"block text-sm font-medium\">Email address</label><p class=\"hint\">Used only to ask whether a solution to your problem worked. Leave empty to remove it.</p><input id=\"email\" name=\"email\" type=\"email\" value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<label class=\"flex cursor-pointer items-start gap-3\"><input type=\"checkbox\" name=\"in_directory\" value=\"1\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var21 string
-				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.ResolveAttributeValue(f.Email)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 127, Col: 65}
+				if f.InDirectory {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, " checked")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var21)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\" maxlength=\"254\" autocomplete=\"email\" placeholder=\"you@example.com\" class=\"field\">")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = userFieldError(f.Errors, "email").Render(ctx, templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, " class=\"switch\"> <span class=\"text-sm\"><span class=\"font-medium\">List me in the members directory</span> <span class=\"mt-0.5 block text-stone-500\">Also shows links to your connected sign-in profiles on your profile.</span></span></label>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = formSettingsGroup("Email", "Optional. Never shown to anyone.", formIconMail()).Render(templ.WithChildren(ctx, templ_7745c5c3_Var20), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = formSettingsGroup("Directory", "Whether other members can find you.", formIconPeople()).Render(templ.WithChildren(ctx, templ_7745c5c3_Var20), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<div class=\"flex justify-end\"><button type=\"submit\" class=\"btn px-5\">Save changes</button></div></fieldset></form><div class=\"mt-8\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Var22 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+			templ_7745c5c3_Var21 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 				templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 				templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
 				if !templ_7745c5c3_IsBuffer {
@@ -530,17 +518,64 @@ func Settings(f SettingsForm) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<div class=\"flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between\"><div class=\"text-sm\"><p class=\"font-medium\">Export</p><p class=\"text-stone-500\">Download everything you've written or done here as JSON, including anonymous posts.</p></div><a href=\"/settings/export\" class=\"btn-secondary shrink-0\"><svg class=\"size-4\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M10 3.5v9M6 9l4 4 4-4M4 16.5h12\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg> Export my data</a></div><div class=\"flex flex-col gap-3 border-t border-stone-200 pt-5 sm:flex-row sm:items-center sm:justify-between\"><div class=\"text-sm\"><p class=\"font-medium text-red-700 dark:text-red-300\">Delete account</p><p class=\"text-stone-500\">Removes your sign-in links and profile. Your posts stay, shown as \"deleted user\".</p></div><a href=\"/settings/delete\" class=\"btn-danger-soft shrink-0\">Delete my account…</a></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<div><label for=\"email\" class=\"block text-sm font-medium\">Email address</label><p class=\"hint\">Used only to ask whether a solution to your problem worked. Leave empty to remove it.</p><input id=\"email\" name=\"email\" type=\"email\" value=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var22 string
+				templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.ResolveAttributeValue(f.Email)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 136, Col: 65}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\" maxlength=\"254\" autocomplete=\"email\" placeholder=\"you@example.com\" class=\"field\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = userFieldError(f.Errors, "email").Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = formSettingsGroup("Your data", "Take it with you, or leave for good.", formIconData()).Render(templ.WithChildren(ctx, templ_7745c5c3_Var22), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = formSettingsGroup("Email", "Optional. Never shown to anyone.", formIconMail()).Render(templ.WithChildren(ctx, templ_7745c5c3_Var21), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</div><script src=\"/static/js/forms.js?v=atlas-2\" defer></script>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "<div class=\"flex justify-end\"><button type=\"submit\" class=\"btn px-5\">Save changes</button></div></fieldset></form><div class=\"mt-8\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Var23 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+				templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+				templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+				if !templ_7745c5c3_IsBuffer {
+					defer func() {
+						templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+						if templ_7745c5c3_Err == nil {
+							templ_7745c5c3_Err = templ_7745c5c3_BufErr
+						}
+					}()
+				}
+				ctx = templ.InitializeContext(ctx)
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "<div class=\"flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between\"><div class=\"text-sm\"><p class=\"font-medium\">Export</p><p class=\"text-stone-500\">Download everything you've written or done here as JSON, including anonymous posts.</p></div><a href=\"/settings/export\" class=\"btn-secondary shrink-0\"><svg class=\"size-4\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M10 3.5v9M6 9l4 4 4-4M4 16.5h12\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg> Export my data</a></div><div class=\"flex flex-col gap-3 border-t border-stone-200 pt-5 sm:flex-row sm:items-center sm:justify-between\"><div class=\"text-sm\"><p class=\"font-medium text-red-700 dark:text-red-300\">Delete account</p><p class=\"text-stone-500\">Removes your sign-in links and profile. Your posts stay, shown as \"deleted user\".</p></div><a href=\"/settings/delete\" class=\"btn-danger-soft shrink-0\">Delete my account…</a></div>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				return nil
+			})
+			templ_7745c5c3_Err = formSettingsGroup("Your data", "Take it with you, or leave for good.", formIconData()).Render(templ.WithChildren(ctx, templ_7745c5c3_Var23), templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</div><script src=\"/static/js/forms.js?v=atlas-2\" defer></script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -571,12 +606,12 @@ func DeleteAccount(handle string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var23 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var23 == nil {
-			templ_7745c5c3_Var23 = templ.NopComponent
+		templ_7745c5c3_Var24 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var24 == nil {
+			templ_7745c5c3_Var24 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Var24 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_Var25 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
 			if !templ_7745c5c3_IsBuffer {
@@ -588,39 +623,39 @@ func DeleteAccount(handle string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "<div class=\"mx-auto max-w-lg sm:pt-4\"><div class=\"card overflow-hidden\"><div class=\"border-b border-red-500/20 bg-red-500/5 px-5 py-4\"><div class=\"flex items-center gap-3\"><span class=\"grid size-9 place-items-center rounded-full bg-red-500/12 text-red-600 dark:text-red-300\"><svg class=\"size-5\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M10 3 2.5 16.5h15L10 3Z\" stroke-linejoin=\"round\"></path><path d=\"M10 8.5v3.5M10 14.3v.2\" stroke-linecap=\"round\"></path></svg></span><h1 class=\"text-xl font-semibold tracking-tight\">Delete your account?</h1></div></div><div class=\"space-y-3 px-5 py-4 text-sm leading-relaxed text-stone-700\"><p>This signs you out everywhere and cannot be undone. We will:</p><ul class=\"space-y-2\"><li class=\"flex gap-2\"><span class=\"mt-2 size-1.5 shrink-0 rounded-full bg-red-500\"></span><span>remove the LinkedIn / X links that let you sign in as ")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var25 string
-			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs("@" + handle)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 177, Col: 171}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, ";</span></li><li class=\"flex gap-2\"><span class=\"mt-2 size-1.5 shrink-0 rounded-full bg-red-500\"></span><span>clear your name, handle, declared history and email;</span></li><li class=\"flex gap-2\"><span class=\"mt-2 size-1.5 shrink-0 rounded-full bg-stone-400\"></span><span>keep your problems, solutions and revisions, shown as \"deleted user\".</span></li></ul><p class=\"text-stone-500\">If you sign in again later with the same provider account, you'll start a fresh, unconnected account.</p></div><form method=\"post\" action=\"/settings/delete\" class=\"flex flex-col-reverse gap-2 border-t border-stone-200 bg-stone-50 px-5 py-3 sm:flex-row sm:justify-end\"><input type=\"hidden\" name=\"csrf_token\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "<div class=\"mx-auto max-w-lg sm:pt-4\"><div class=\"card overflow-hidden\"><div class=\"border-b border-red-500/20 bg-red-500/5 px-5 py-4\"><div class=\"flex items-center gap-3\"><span class=\"grid size-9 place-items-center rounded-full bg-red-500/12 text-red-600 dark:text-red-300\"><svg class=\"size-5\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M10 3 2.5 16.5h15L10 3Z\" stroke-linejoin=\"round\"></path><path d=\"M10 8.5v3.5M10 14.3v.2\" stroke-linecap=\"round\"></path></svg></span><h1 class=\"text-xl font-semibold tracking-tight\">Delete your account?</h1></div></div><div class=\"space-y-3 px-5 py-4 text-sm leading-relaxed text-stone-700\"><p>This signs you out everywhere and cannot be undone. We will:</p><ul class=\"space-y-2\"><li class=\"flex gap-2\"><span class=\"mt-2 size-1.5 shrink-0 rounded-full bg-red-500\"></span><span>remove the connected provider links that let you sign in as ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var26 string
-			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.ResolveAttributeValue(auth.CSRFToken(ctx))
+			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs("@" + handle)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 184, Col: 71}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 186, Col: 177}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var26)
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\"> <a href=\"/settings\" class=\"btn-secondary\">Cancel</a> <button type=\"submit\" class=\"btn-danger\">Delete my account</button></form></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, ";</span></li><li class=\"flex gap-2\"><span class=\"mt-2 size-1.5 shrink-0 rounded-full bg-red-500\"></span><span>clear your name, handle, declared history, contributor preference and email;</span></li><li class=\"flex gap-2\"><span class=\"mt-2 size-1.5 shrink-0 rounded-full bg-stone-400\"></span><span>keep your problems, solutions and revisions, shown as \"deleted user\".</span></li></ul><p class=\"text-stone-500\">If you sign in again later with the same provider account, you'll start a fresh, unconnected account.</p></div><form method=\"post\" action=\"/settings/delete\" class=\"flex flex-col-reverse gap-2 border-t border-stone-200 bg-stone-50 px-5 py-3 sm:flex-row sm:justify-end\"><input type=\"hidden\" name=\"csrf_token\" value=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var27 string
+			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.ResolveAttributeValue(auth.CSRFToken(ctx))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/settings.templ`, Line: 193, Col: 71}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var27)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "\"> <a href=\"/settings\" class=\"btn-secondary\">Cancel</a> <button type=\"submit\" class=\"btn-danger\">Delete my account</button></form></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.Base("Delete account").Render(templ.WithChildren(ctx, templ_7745c5c3_Var24), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.Base("Delete account").Render(templ.WithChildren(ctx, templ_7745c5c3_Var25), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

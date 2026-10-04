@@ -11,14 +11,16 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/hi-naresh/unsolved/internal/auth"
 	"github.com/hi-naresh/unsolved/internal/views/layouts"
+	"github.com/hi-naresh/unsolved/internal/views/partials"
 )
 
 // WelcomeForm is the /welcome form state.
 type WelcomeForm struct {
-	Handle      string
-	InDirectory bool
-	Next        string
-	Errors      map[string]string // field → message
+	Handle                 string
+	InDirectory            bool
+	ContributionPreference string
+	Next                   string
+	Errors                 map[string]string // field → message
 }
 
 const formHandleRule = "3–24 lowercase letters, digits or underscores."
@@ -58,14 +60,14 @@ func Welcome(f WelcomeForm) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mx-auto max-w-md sm:pt-6\"><div class=\"page-introduction\"><div class=\"mx-auto grid size-12 place-items-center rounded-2xl bg-accent-soft text-accent-ink\"><svg class=\"size-6\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M12 3.5l1.9 4.6 4.9.4-3.7 3.2 1.1 4.8L12 14l-4.2 2.5 1.1-4.8-3.7-3.2 4.9-.4L12 3.5Z\" stroke-linejoin=\"round\"></path><path d=\"M5 20.5h14\" stroke-linecap=\"round\"></path></svg></div><h1 class=\"mt-4 text-2xl font-semibold tracking-tight sm:text-3xl\">Welcome to Unsolved</h1><p class=\"mt-2 text-[15px] text-stone-600\">Two quick choices and you're in.</p></div><form method=\"post\" action=\"/welcome\" class=\"card mt-6 space-y-6 p-5 sm:p-6\"><input type=\"hidden\" name=\"csrf_token\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mx-auto max-w-md sm:pt-6\"><div class=\"page-introduction\"><div class=\"mx-auto grid size-12 place-items-center rounded-2xl bg-accent-soft text-accent-ink\"><svg class=\"size-6\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M12 3.5l1.9 4.6 4.9.4-3.7 3.2 1.1 4.8L12 14l-4.2 2.5 1.1-4.8-3.7-3.2 4.9-.4L12 3.5Z\" stroke-linejoin=\"round\"></path><path d=\"M5 20.5h14\" stroke-linecap=\"round\"></path></svg></div><h1 class=\"mt-4 text-2xl font-semibold tracking-tight sm:text-3xl\">Welcome to Unsolved</h1><p class=\"mt-2 text-[15px] text-stone-600\">Set up your profile and choose where to begin.</p></div><form method=\"post\" action=\"/welcome\" class=\"card mt-6 space-y-6 p-5 sm:p-6\"><input type=\"hidden\" name=\"csrf_token\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.ResolveAttributeValue(auth.CSRFToken(ctx))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/welcome.templ`, Line: 31, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/welcome.templ`, Line: 33, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 			if templ_7745c5c3_Err != nil {
@@ -78,98 +80,106 @@ func Welcome(f WelcomeForm) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.ResolveAttributeValue(f.Next)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/welcome.templ`, Line: 32, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/welcome.templ`, Line: 34, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"><div><label for=\"handle\" class=\"block text-sm font-semibold\">Pick a handle</label><div class=\"adorn\"><span aria-hidden=\"true\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = partials.ContributorPreference(f.ContributionPreference, f.Errors["contribution_preference"]).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div><label for=\"handle\" class=\"block text-sm font-semibold\">Pick a handle</label><div class=\"adorn\"><span aria-hidden=\"true\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs("@")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/welcome.templ`, Line: 36, Col: 36}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/welcome.templ`, Line: 39, Col: 36}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span> <input id=\"handle\" name=\"handle\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</span> <input id=\"handle\" name=\"handle\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.ResolveAttributeValue(f.Handle)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/welcome.templ`, Line: 40, Col: 23}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/welcome.templ`, Line: 43, Col: 23}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" required minlength=\"3\" maxlength=\"24\" pattern=\"[a-z0-9_]{3,24}\" autocomplete=\"off\" autocapitalize=\"none\" spellcheck=\"false\" placeholder=\"your_handle\" aria-describedby=\"handle-hint\" data-handle></div><p id=\"handle-hint\" class=\"hint mt-1.5\" data-default=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" required minlength=\"3\" maxlength=\"24\" pattern=\"[a-z0-9_]{3,24}\" autocomplete=\"off\" autocapitalize=\"none\" spellcheck=\"false\" placeholder=\"your_handle\" aria-describedby=\"handle-hint\" data-handle></div><p id=\"handle-hint\" class=\"hint mt-1.5\" data-default=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.ResolveAttributeValue(formHandleRule + " Shown on posts you make under your name.")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/welcome.templ`, Line: 53, Col: 120}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/welcome.templ`, Line: 56, Col: 120}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(formHandleRule)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/welcome.templ`, Line: 53, Col: 139}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/welcome.templ`, Line: 56, Col: 139}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, " Shown on posts you make under your name.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, " Shown on posts you make under your name.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if msg, ok := f.Errors["handle"]; ok {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<p class=\"error dark:text-red-400\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<p class=\"error dark:text-red-400\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(msg)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/welcome.templ`, Line: 55, Col: 46}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/pages/welcome.templ`, Line: 58, Col: 46}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div><label class=\"flex cursor-pointer items-start gap-3 rounded-lg border border-stone-200 p-3 transition hover:bg-stone-50\"><input type=\"checkbox\" name=\"in_directory\" value=\"1\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</div><label class=\"flex cursor-pointer items-start gap-3 rounded-lg border border-stone-200 p-3 transition hover:bg-stone-50\"><input type=\"checkbox\" name=\"in_directory\" value=\"1\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if f.InDirectory {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, " checked")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, " checked")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, " class=\"switch\"> <span class=\"text-sm\"><span class=\"font-semibold\">List me in the members directory</span> <span class=\"mt-0.5 block text-stone-500\">Your profile will then also show your LinkedIn or X link. Off by default.</span></span></label> <button type=\"submit\" class=\"btn w-full py-2.5\">Continue <svg class=\"size-4\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M4 10h12M11 5l5 5-5 5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg></button></form><p class=\"mt-4 text-center text-xs text-stone-500\">You can change both any time in Settings.</p></div><script src=\"/static/js/forms.js?v=atlas-2\" defer></script>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, " class=\"switch\"> <span class=\"text-sm\"><span class=\"font-semibold\">List me in the members directory</span> <span class=\"mt-0.5 block text-stone-500\">Your profile will then also show links to your connected sign-in profiles. Off by default.</span></span></label> <button type=\"submit\" class=\"btn w-full py-2.5\">Continue <svg class=\"size-4\" viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M4 10h12M11 5l5 5-5 5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg></button> <button type=\"submit\" name=\"action\" value=\"skip\" formnovalidate class=\"btn-secondary w-full\">Skip for now</button></form><p class=\"mt-4 text-center text-xs text-stone-500\">You can change your choice any time in Settings.</p></div><script src=\"/static/js/forms.js?v=atlas-2\" defer></script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
